@@ -1,0 +1,36 @@
+frontend/src/
+│
+├── app/                          ← PAGES (what users see)
+│   ├── (business-login)/
+│   │   └── login/page.tsx        ← Business login
+│   ├── (business-portal)/
+│   │   ├── dashboard/page.tsx    ← Dashboard
+│   │   ├── contacts/page.tsx     ← Contacts
+│   │   ├── messages/page.tsx     ← Inbox
+│   │   ├── messages/[id]/page.tsx← Single conversation
+│   │   ├── broadcasts/page.tsx   ← Campaigns list
+│   │   ├── broadcasts/new/page.tsx← Create campaign
+│   │   ├── broadcasts/[id]/page.tsx← Campaign analytics
+│   │   ├── templates/page.tsx    ← Templates
+│   │   └── settings/page.tsx     ← Settings
+│   ├── (admin-login)/
+│   │   └── admin/login/page.tsx  ← Admin login
+│   ├── (admin-portal)/
+│   │   ├── admin/dashboard/      ← Admin overview
+│   │   ├── admin/businesses/     ← All businesses
+│   │   ├── admin/tickets/        ← Support tickets
+│   │   └── admin/settings/
+│   ├── globals.css               ← Only CSS file
+│   └── layout.tsx                ← Root HTML shell
+│
+├── components/                   ← REUSABLE UI PIECES
+│   ├── ui/                       ← Button, Card, Badge, Input, Modal, Tabs, Skeleton
+│   ├── layout/                   ← Sidebar, AdminSidebar, Topbar, ThemeProvider
+│   └── features/
+│       └── TicketButton.tsx      ← Floating support button
+│
+└── lib/                          ← LOGIC / DATA
+    ├── api.ts                    ← ALL API calls (connect backend here)
+    ├── mock-data.ts              ← Fake data (replace when backend ready)
+    ├── auth.ts                   ← Login/logout
+    └── utils.ts                  ← Helpers (dates, class names, SMS counter)
