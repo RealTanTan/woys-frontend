@@ -52,6 +52,7 @@ export default function SettingsPage() {
   const [infoMessage, setInfoMessage] = useState("Billiard Bar & Club SMS Marketing. Msg frequency varies. Msg & data rates may apply. Reply STOP to cancel, HELP for help.");
   const [orgName, setOrgName] = useState(currentOrg.name);
   const [saved, setSaved] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
   const handleSave = async () => {
     await new Promise(r => setTimeout(r, 500));
@@ -250,6 +251,36 @@ export default function SettingsPage() {
             <p className="text-xs text-slate-400 flex items-center gap-1">
               <CreditCard className="w-3.5 h-3.5" /> Billing powered by Stripe · Cancel anytime
             </p>
+
+            {/* BL-05: Self-serve cancellation */}
+            <Card className="border-red-100 dark:border-red-900/40">
+              <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-1">Cancel Subscription</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">
+                Your account stays active until the end of the current billing period. No refunds on partial months.
+              </p>
+              {!showCancelConfirm ? (
+                <Button variant="danger" size="sm" onClick={() => setShowCancelConfirm(true)}>
+                  Cancel Subscription
+                </Button>
+              ) : (
+                <div className="space-y-3">
+                  <div className="p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/40 rounded-xl">
+                    <p className="text-sm font-semibold text-red-700 dark:text-red-400">Are you sure?</p>
+                    <p className="text-xs text-red-600 dark:text-red-500 mt-0.5">
+                      This will cancel your subscription. You'll lose access at the end of your billing cycle. This cannot be undone.
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="danger" size="sm" onClick={() => { setShowCancelConfirm(false); alert("Cancellation submitted. A confirmation email will be sent."); }}>
+                      Yes, Cancel My Subscription
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => setShowCancelConfirm(false)}>
+                      Keep My Plan
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </Card>
           </div>
         )}
       </main>
