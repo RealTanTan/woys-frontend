@@ -14,7 +14,7 @@
  *   const [org, setOrg] = useState(null);
  *   useEffect(() => { adminGetOrganization(id).then(setOrg); }, [id]);
  */
-import { use } from "react";
+import { use, useState } from "react";
 import { ArrowLeft, MessageSquare, Users, Phone, Building2 } from "lucide-react";
 import { Topbar } from "@/components/layout/Topbar";
 import { Card, StatCard } from "@/components/ui/Card";
@@ -27,6 +27,19 @@ import Link from "next/link";
 const planColors: Record<string, "gray" | "blue" | "green" | "purple" | "orange"> = {
   trial: "gray", starter: "blue", growth: "green", pro: "purple", enterprise: "orange",
 };
+
+const MODULES = [
+  { id: "campaigns",    label: "Campaigns",         desc: "Mass broadcast campaigns" },
+  { id: "automation",   label: "Automation Flows",  desc: "Multi-step automated sequences" },
+  { id: "two_way",      label: "Two-Way Messaging", desc: "Inbox & conversation threads" },
+  { id: "ai_brain",     label: "AI Brain",          desc: "Proactive campaign suggestions" },
+  { id: "templates",    label: "Templates",         desc: "Reusable message templates" },
+  { id: "analytics",    label: "Analytics",         desc: "Campaign delivery reports" },
+  { id: "csv_import",   label: "CSV Import",        desc: "Bulk contact import" },
+  { id: "mms",          label: "MMS (Images)",      desc: "Multimedia message attachments" },
+  { id: "ecommerce",    label: "E-commerce Hook",   desc: "Webhook for online store events" },
+  { id: "white_glove",  label: "White-Glove Setup", desc: "Admin-managed onboarding" },
+];
 
 export default function AdminBusinessDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -42,6 +55,17 @@ export default function AdminBusinessDetailPage({ params }: { params: Promise<{ 
   }
 
   const usagePct = Math.round((org.messages_used / org.messages_limit) * 100);
+
+  const [modules, setModules] = useState<Record<string, boolean>>({
+    campaigns: true, automation: true, two_way: true, ai_brain: true,
+    templates: true, analytics: true, csv_import: true, mms: false,
+    ecommerce: false, white_glove: false,
+  });
+
+  const toggleModule = (id: string) => {
+    // TODO: await adminUpdateModule(org.id, id, !modules[id]) from api.ts
+    setModules(m => ({ ...m, [id]: !m[id] }));
+  };
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -71,14 +95,13 @@ export default function AdminBusinessDetailPage({ params }: { params: Promise<{ 
           <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-3">Usage This Month</p>
           <div className="flex items-center justify-between text-sm mb-2">
             <span className="text-slate-600 dark:text-slate-400">{org.messages_used.toLocaleString()} / {org.messages_limit.toLocaleString()} SMS</span>
-            <span className={`font-semibold ${usagePct >= 90 ? "text-red-500" : usagePct >= 70 ? "text-amber-500" : "text-emerald-500"}`}>{usagePct}%</span>
+            <span className={`font-semibold ${usagePct >= 80 ? "text-red-500" : usagePct >= 60 ? "text-amber-500" : "text-emerald-500"}`}>{usagePct}%</span>
           </div>
           <div className="h-3 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-            <div className={`h-full rounded-full ${usagePct >= 90 ? "bg-red-500" : usagePct >= 70 ? "bg-amber-500" : "bg-brand-500"}`} style={{ width: `${usagePct}%` }} />
+            <div className={`h-full rounded-full ${usagePct >= 80 ? "bg-red-500" : usagePct >= 60 ? "bg-amber-500" : "bg-brand-500"}`} style={{ width: `${usagePct}%` }} />
           </div>
-          {usagePct >= 90 && (
-            <p className="text-xs text-red-500 mt-2">⚠ Near plan limit — consider contacting the business about upgrading.</p>
-          )}
+          {usagePct >= 100 && <p className="text-xs text-red-500 mt-2">⚠ Plan limit reached — business cannot send more SMS this cycle.</p>}
+          {usagePct >= 80 && usagePct < 100 && <p className="text-xs text-amber-500 mt-2">⚠ At {usagePct}% of plan limit — consider contacting the business about upgrading.</p>}
         </Card>
 
         <Card>
@@ -91,6 +114,27 @@ export default function AdminBusinessDetailPage({ params }: { params: Promise<{ 
               ? <Button variant="danger" size="sm">Suspend Account</Button>
               : <Button size="sm">Reactivate Account</Button>
             }
+          </div>
+        </Card>
+
+        <Card>
+          <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-1">Module Configuration</p>
+          <p className="text-xs text-slate-400 dark:text-slate-500 mb-4">Disabled modules are fully hidden from the client UI — not grayed out. (MD-02)</p>
+          <div className="space-y-2">
+            {MODULES.map(mod => (
+              <div key={mod.id} className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition">
+                <div>
+                  <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{mod.label}</p>
+                  <p className="text-xs text-slate-400">{mod.desc}</p>
+                </div>
+                <button
+                  onClick={() => toggleModule(mod.id)}
+                  className={`relative w-10 h-6 rounded-full transition-colors shrink-0 ${modules[mod.id] ? "bg-brand-600" : "bg-slate-200 dark:bg-slate-700"}`}
+                >
+                  <span className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${modules[mod.id] ? "translate-x-5" : "translate-x-1"}`} />
+                </button>
+              </div>
+            ))}
           </div>
         </Card>
       </main>

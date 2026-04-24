@@ -17,8 +17,8 @@
  * SMS COUNTER: smsCharCount() in utils.ts — 160 chars = 1 segment, warn if over.
  * CASL: warn user if message body doesn't include "STOP" opt-out instruction.
  */
-import { useState } from "react";
-import { ArrowLeft, Sparkles, RefreshCw, Star, Users, RotateCcw, Radio, Calendar, Send, FileText } from "lucide-react";
+import { useState, useRef } from "react";
+import { ArrowLeft, Sparkles, RefreshCw, Star, Users, RotateCcw, Radio, Calendar, Send, FileText, Paperclip, Image as ImageIcon, AlertTriangle, X } from "lucide-react";
 import { Topbar } from "@/components/layout/Topbar";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -55,8 +55,30 @@ export default function NewBroadcastPage() {
   const [suggestions] = useState(getAiSuggestions());
   const [showAi, setShowAi] = useState(false);
 
+  const [mmsFile, setMmsFile] = useState<File | null>(null);
+  const [mmsPreview, setMmsPreview] = useState<string | null>(null);
+  const [quietHoursWarning, setQuietHoursWarning] = useState(false);
+  const mmsRef = useRef<HTMLInputElement>(null);
+
   const charInfo = smsCharCount(message);
   const selectedAudience = audiences.find(a => a.id === audience);
+
+  const handleMmsFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 500 * 1024) { alert("Max file size is 500KB (MMS limit)."); return; }
+    setMmsFile(file);
+    const reader = new FileReader();
+    reader.onload = () => setMmsPreview(reader.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  const checkQuietHours = (datetime: string) => {
+    const d = new Date(datetime);
+    const hour = d.getHours();
+    setQuietHoursWarning(hour >= 21 || hour < 8); // 9PM–8AM
+    setScheduledAt(datetime);
+  };
 
   const handleSend = () => {
     router.push("/broadcasts");
@@ -168,6 +190,16 @@ export default function NewBroadcastPage() {
               </div>
             )}
 
+            {/* Personalization tokens */}
+            <div className="flex flex-wrap gap-2">
+              <p className="text-xs text-slate-400 w-full">Insert token:</p>
+              {["{{first_name}}", "{{business_name}}"].map(token => (
+                <button key={token} onClick={() => setMessage(m => m + token)} className="text-xs px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-brand-100 dark:hover:bg-brand-900/30 hover:text-brand-700 dark:hover:text-brand-300 transition font-mono">
+                  {token}
+                </button>
+              ))}
+            </div>
+
             <Textarea
               label="Message"
               rows={5}
@@ -175,6 +207,25 @@ export default function NewBroadcastPage() {
               onChange={e => setMessage(e.target.value)}
               placeholder="Type your message here... Include STOP instructions for CASL compliance."
             />
+
+            {/* MMS image attach */}
+            <div>
+              <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-2">Attach Image (MMS) — optional, max 500KB JPG/PNG/GIF</p>
+              {mmsPreview ? (
+                <div className="relative w-32 h-20 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={mmsPreview} alt="MMS" className="w-full h-full object-cover" />
+                  <button onClick={() => { setMmsFile(null); setMmsPreview(null); }} className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/60 text-white flex items-center justify-center">
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ) : (
+                <button onClick={() => mmsRef.current?.click()} className="flex items-center gap-2 px-3 py-2 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 text-slate-400 hover:border-brand-400 hover:text-brand-500 transition text-sm">
+                  <ImageIcon className="w-4 h-4" /> Attach Image
+                </button>
+              )}
+              <input ref={mmsRef} type="file" accept="image/jpeg,image/png,image/gif" className="hidden" onChange={handleMmsFile} />
+            </div>
 
             {/* Character counter */}
             <div className="flex items-center justify-between">
@@ -225,7 +276,18 @@ export default function NewBroadcastPage() {
             </div>
 
             {scheduleType === "later" && (
-              <Input type="datetime-local" label="Date & Time" value={scheduledAt} onChange={e => setScheduledAt(e.target.value)} />
+              <>
+                <Input type="datetime-local" label="Date & Time" value={scheduledAt} onChange={e => checkQuietHours(e.target.value)} />
+                {quietHoursWarning && (
+                  <div className="flex items-start gap-2 p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/40 rounded-xl">
+                    <AlertTriangle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-semibold text-red-700 dark:text-red-400">Quiet Hours Violation (TCPA/CASL)</p>
+                      <p className="text-xs text-red-600 dark:text-red-500 mt-0.5">No messages can be delivered between 9:00 PM and 8:00 AM local time. Please choose a time within the allowed window.</p>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
 
             {/* Review summary */}
@@ -236,13 +298,14 @@ export default function NewBroadcastPage() {
                 <div className="flex justify-between"><span className="text-slate-500">Audience</span><span className="font-medium text-slate-900 dark:text-slate-100">{selectedAudience?.label} ({selectedAudience?.count})</span></div>
                 <div className="flex justify-between"><span className="text-slate-500">Message length</span><span className="font-medium text-slate-900 dark:text-slate-100">{charInfo.len} chars · {charInfo.segments} segment{charInfo.segments > 1 ? "s" : ""}</span></div>
                 <div className="flex justify-between"><span className="text-slate-500">Send</span><span className="font-medium text-slate-900 dark:text-slate-100">{scheduleType === "now" ? "Immediately" : scheduledAt || "—"}</span></div>
+                {mmsFile && <div className="flex justify-between"><span className="text-slate-500">Attachment</span><span className="font-medium text-slate-900 dark:text-slate-100">📎 {mmsFile.name}</span></div>}
               </div>
             </Card>
 
             <div className="flex gap-3">
               <Button variant="outline" onClick={() => setStep(2)}>← Back</Button>
               <Button variant="outline"><FileText className="w-4 h-4" /> Save Draft</Button>
-              <Button onClick={handleSend}>
+              <Button onClick={handleSend} disabled={quietHoursWarning && scheduleType === "later"}>
                 {scheduleType === "now" ? <><Send className="w-4 h-4" /> Send Now</> : <><Calendar className="w-4 h-4" /> Schedule</>}
               </Button>
             </div>

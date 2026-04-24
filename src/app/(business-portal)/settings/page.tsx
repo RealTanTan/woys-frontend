@@ -48,6 +48,8 @@ export default function SettingsPage() {
   const [stopMessage, setStopMessage] = useState(
     "You have been unsubscribed from Billiard Bar & Club messages. Reply START to re-subscribe."
   );
+  const [helpMessage, setHelpMessage] = useState("For help with Billiard Bar & Club messages, call (416) 555-0192 or visit our website. Reply STOP to unsubscribe.");
+  const [infoMessage, setInfoMessage] = useState("Billiard Bar & Club SMS Marketing. Msg frequency varies. Msg & data rates may apply. Reply STOP to cancel, HELP for help.");
   const [orgName, setOrgName] = useState(currentOrg.name);
   const [saved, setSaved] = useState(false);
 
@@ -169,6 +171,24 @@ export default function SettingsPage() {
                     value={stopMessage}
                     onChange={e => setStopMessage(e.target.value)}
                     hint="Sent automatically when a contact replies STOP. Required by CASL."
+                  />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">HELP Reply Message</p>
+                  <Textarea
+                    rows={2}
+                    value={helpMessage}
+                    onChange={e => setHelpMessage(e.target.value)}
+                    hint="Sent automatically when a contact replies HELP. Required by TCPA/CTIA."
+                  />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">INFO Reply Message</p>
+                  <Textarea
+                    rows={2}
+                    value={infoMessage}
+                    onChange={e => setInfoMessage(e.target.value)}
+                    hint="Sent automatically when a contact replies INFO. CTIA requirement."
                   />
                 </div>
                 <div className="p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-100 dark:border-amber-900/40 rounded-xl">

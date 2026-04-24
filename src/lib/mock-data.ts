@@ -1,6 +1,6 @@
 import type {
   Contact, Conversation, Broadcast, Template,
-  TeamMember, Organization, Ticket, AiPromoSuggestion, Message,
+  TeamMember, Organization, Ticket, AiPromoSuggestion, Message, Flow, FlowStep,
 } from "@/types";
 
 // placeholder screenshot (data URI of a tiny grey box — no external URL needed)
@@ -308,3 +308,47 @@ export function getAiSuggestions(): AiPromoSuggestion[] {
 
   return suggestions.slice(0, 3);
 }
+
+// ── Automation Flows ──────────────────────────────────────────────────────────
+export const flows: Flow[] = [
+  {
+    id: "fl1",
+    name: "Welcome Series",
+    trigger_type: "contact_joins",
+    is_active: true,
+    sent_count: 134,
+    replied_count: 28,
+    created_at: "2025-01-10",
+    steps: [
+      { id: "fls1", step_order: 0, delay_hours: 0,  message_body: "Welcome to {{business_name}}! 🎱 We're so glad you joined. Show this text for a free game on your first visit. Reply STOP to opt out." },
+      { id: "fls2", step_order: 1, delay_hours: 72, message_body: "Hey {{first_name}}! Just checking in — have you had a chance to come by yet? Your free game offer is still waiting. 🎱" },
+      { id: "fls3", step_order: 2, delay_hours: 168, message_body: "Last chance, {{first_name}}! Your welcome offer expires soon. See you at {{business_name}}! Reply STOP to opt out." },
+    ],
+  },
+  {
+    id: "fl2",
+    name: "Win-Back Campaign",
+    trigger_type: "date",
+    is_active: true,
+    sent_count: 89,
+    replied_count: 14,
+    created_at: "2025-02-01",
+    steps: [
+      { id: "fls4", step_order: 0, delay_hours: 0,   message_body: "We miss you, {{first_name}}! It's been a while. Come back this month for 50% off your first hour. Reply STOP to opt out." },
+      { id: "fls5", step_order: 1, delay_hours: 120, message_body: "Hey {{first_name}}! Your win-back offer ends in 48 hours. Don't miss out! Reply STOP to opt out." },
+    ],
+  },
+  {
+    id: "fl3",
+    name: "Abandoned Booking Reminder",
+    trigger_type: "custom_event",
+    is_active: false,
+    sent_count: 0,
+    replied_count: 0,
+    created_at: "2025-03-15",
+    steps: [
+      { id: "fls6", step_order: 0, delay_hours: 1,  message_body: "Hi {{first_name}}! You started a booking but didn't finish. Complete it now and get 10% off. Reply STOP to opt out." },
+      { id: "fls7", step_order: 1, delay_hours: 24, message_body: "Still thinking about it? Your 10% off code expires tonight. Book now at {{business_name}}. Reply STOP to opt out." },
+    ],
+  },
+];

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Users, MessageSquare, Radio,
-  FileText, Settings, LogOut, Zap,
+  FileText, Settings, LogOut, Zap, GitBranch,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { mockLogout } from "@/lib/auth";
@@ -14,6 +14,7 @@ const nav = [
   { href: "/contacts",   label: "Contacts",    icon: Users },
   { href: "/messages",   label: "Messages",    icon: MessageSquare },
   { href: "/broadcasts", label: "Broadcasts",  icon: Radio },
+  { href: "/flows",      label: "Flows",       icon: GitBranch },
   { href: "/templates",  label: "Templates",   icon: FileText },
   { href: "/settings",   label: "Settings",    icon: Settings },
 ];

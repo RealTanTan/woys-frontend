@@ -25,7 +25,7 @@ import Link from "next/link";
 
 export default function DashboardPage() {
   const usagePct = Math.round((currentOrg.messages_used / currentOrg.messages_limit) * 100);
-  const usageColor = usagePct >= 90 ? "bg-red-500" : usagePct >= 70 ? "bg-amber-500" : "bg-brand-500";
+  const usageColor = usagePct >= 80 ? "bg-red-500" : usagePct >= 60 ? "bg-amber-500" : "bg-brand-500";
   const recentBroadcasts = broadcasts.filter(b => b.status === "sent").slice(0, 3);
   const recentConvs = conversations.filter(c => c.unread_count > 0).slice(0, 4);
 

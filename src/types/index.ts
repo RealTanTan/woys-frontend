@@ -257,3 +257,31 @@ export interface AiPromoSuggestion {
   body: string;    // ready-to-send SMS text
   reason: string;  // why this promo is relevant right now
 }
+
+/**
+ * DB table: flows
+ * Automation flow — multi-step message sequence triggered by an event.
+ * trigger_type: "contact_joins" | "birthday" | "date" | "custom_event"
+ */
+export interface Flow {
+  id: string;
+  name: string;
+  trigger_type: "contact_joins" | "birthday" | "date" | "custom_event";
+  is_active: boolean;
+  steps: FlowStep[];
+  sent_count: number;
+  replied_count: number;
+  created_at: string;
+}
+
+/**
+ * DB table: flow_steps
+ * One message step within an automation flow.
+ */
+export interface FlowStep {
+  id: string;
+  step_order: number;      // 0-indexed
+  delay_hours: number;     // delay from previous step (0 = immediate)
+  message_body: string;
+  branch_condition?: "yes" | "no" | null; // for yes/no branching (FL-06)
+}
