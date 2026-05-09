@@ -3,7 +3,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Users, MessageSquare, Radio,
-  FileText, Settings, LogOut, Zap, GitBranch,
+  Settings, LogOut, Zap, GitBranch,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { mockLogout } from "@/lib/auth";
@@ -11,12 +11,11 @@ import { useRouter } from "next/navigation";
 
 const nav = [
   { href: "/dashboard",  label: "Dashboard",  icon: LayoutDashboard },
-  { href: "/contacts",   label: "Contacts",    icon: Users },
-  { href: "/messages",   label: "Messages",    icon: MessageSquare },
-  { href: "/broadcasts", label: "Broadcasts",  icon: Radio },
-  { href: "/flows",      label: "Flows",       icon: GitBranch },
-  { href: "/templates",  label: "Templates",   icon: FileText },
-  { href: "/settings",   label: "Settings",    icon: Settings },
+  { href: "/contacts",   label: "Contacts",   icon: Users },
+  { href: "/messages",   label: "Messages",   icon: MessageSquare },
+  { href: "/broadcasts", label: "Campaigns",  icon: Radio },
+  { href: "/flows",      label: "Flows",      icon: GitBranch },
+  { href: "/settings",   label: "Settings",   icon: Settings },
 ];
 
 export function Sidebar() {

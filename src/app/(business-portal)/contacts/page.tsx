@@ -8,7 +8,7 @@
  *   contacts → GET /api/contacts  (getContacts in api.ts)
  */
 import { useState, useRef } from "react";
-import { Plus, Upload, Search, Phone, Mail, CheckCircle, Clock, XCircle, User } from "lucide-react";
+import { Plus, Upload, Search, Phone, Mail, CheckCircle, Clock, XCircle, User, Pencil } from "lucide-react";
 import { Topbar } from "@/components/layout/Topbar";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
@@ -76,6 +76,9 @@ export default function ContactsPage() {
   const [addForm, setAddForm] = useState({ name: "", phone: "", email: "", tag: "regular" });
   const [addLoading, setAddLoading] = useState(false);
   const [consentLoading, setConsentLoading] = useState(false);
+  const [editContact, setEditContact] = useState<Contact | null>(null);
+  const [editForm, setEditForm] = useState({ name: "", phone: "", email: "", tag: "regular" });
+  const [editLoading, setEditLoading] = useState(false);
   const csvRef = useRef<HTMLInputElement>(null);
 
   const given    = contacts.filter(c => c.consent_status === "given");
@@ -122,6 +125,30 @@ export default function ContactsPage() {
     const name = consentContact.name;
     setConsentContact(null);
     showToast(`Consent request sent to ${name}.`);
+  };
+
+  const openEdit = (c: Contact) => {
+    setEditContact(c);
+    setEditForm({
+      name: c.name,
+      phone: c.phone,
+      email: c.email ?? "",
+      tag: c.tags[0] ?? "regular",
+    });
+  };
+
+  const handleEditContact = async () => {
+    if (!editContact || !editForm.name.trim() || !editForm.phone.trim()) return;
+    setEditLoading(true);
+    await new Promise(r => setTimeout(r, 600));
+    setContacts(cs => cs.map(c =>
+      c.id === editContact.id
+        ? { ...c, name: editForm.name.trim(), phone: editForm.phone.trim(), email: editForm.email.trim() || undefined, tags: [editForm.tag as ContactTag] }
+        : c
+    ));
+    showToast(`${editForm.name} updated.`);
+    setEditLoading(false);
+    setEditContact(null);
   };
 
   const handleCsvImport = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -195,13 +222,20 @@ export default function ContactsPage() {
             filtered.map((contact) => (
               <div key={contact.id} className="group relative">
                 <ContactRow contact={contact} />
-                {contact.consent_status === "pending" && (
-                  <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition">
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition flex items-center gap-2">
+                  {contact.consent_status === "pending" && (
                     <Button size="sm" variant="secondary" onClick={() => setConsentContact(contact)}>
                       Send Consent
                     </Button>
-                  </div>
-                )}
+                  )}
+                  <button
+                    onClick={() => openEdit(contact)}
+                    className="p-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-brand-600 hover:border-brand-300 dark:hover:border-brand-600 shadow-sm transition"
+                    title="Edit contact"
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
             ))
           )}
@@ -243,6 +277,41 @@ export default function ContactsPage() {
             </Button>
           </div>
         </div>
+      </Modal>
+
+      {/* Edit Contact Modal */}
+      <Modal open={!!editContact} onClose={() => setEditContact(null)} title="Edit Contact" size="md">
+        {editContact && (
+          <div className="space-y-4">
+            <Input label="Full Name" placeholder="Jane Doe" value={editForm.name} onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))} />
+            <Input label="Phone Number" placeholder="+1 (416) 555-0100" value={editForm.phone} onChange={e => setEditForm(f => ({ ...f, phone: e.target.value }))} />
+            <Input label="Email (optional)" type="email" placeholder="jane@example.com" value={editForm.email} onChange={e => setEditForm(f => ({ ...f, email: e.target.value }))} />
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Tag</label>
+              <select
+                value={editForm.tag}
+                onChange={e => setEditForm(f => ({ ...f, tag: e.target.value }))}
+                className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500"
+              >
+                <option value="regular">Regular</option>
+                <option value="vip">VIP</option>
+                <option value="new">New Customer</option>
+                <option value="winback">Win-back</option>
+              </select>
+            </div>
+            <div className="flex gap-3 pt-2">
+              <Button variant="outline" className="flex-1" onClick={() => setEditContact(null)}>Cancel</Button>
+              <Button
+                className="flex-1"
+                loading={editLoading}
+                disabled={!editForm.name.trim() || !editForm.phone.trim()}
+                onClick={handleEditContact}
+              >
+                Save Changes
+              </Button>
+            </div>
+          </div>
+        )}
       </Modal>
 
       {/* Send Consent Modal */}
