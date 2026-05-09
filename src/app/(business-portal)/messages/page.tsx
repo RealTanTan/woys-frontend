@@ -2,52 +2,64 @@
 /*
  * PAGE: Messages (Inbox)
  * Lists all 1-to-1 SMS conversations, split into Open and Resolved.
- * Clicking a conversation opens the full thread (/messages/[id]).
  * "New Message" button lets the business send a one-off SMS to any phone number.
  *
  * DATA (currently mock — swap when backend is ready):
  *   conversations → GET /api/conversations  (getConversations in api.ts)
- *
- * HOW TO CONNECT:
- *   import { getConversations, sendMessage } from "@/lib/api";
- *   const [conversations, setConversations] = useState([]);
- *   useEffect(() => { getConversations().then(setConversations); }, []);
- *
- * REALTIME: wire Supabase Realtime here to push new inbound messages live.
  */
 import { useState } from "react";
-import { Search, MessageSquare } from "lucide-react";
+import { Search, MessageSquare, CheckCircle } from "lucide-react";
 import { Topbar } from "@/components/layout/Topbar";
 import { Input } from "@/components/ui/Input";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { Textarea } from "@/components/ui/Input";
-import { conversations } from "@/lib/mock-data"; // ← REMOVE when backend ready
+import { useToast } from "@/components/ui/Toast";
+import { conversations } from "@/lib/mock-data";
 import { formatRelative } from "@/lib/utils";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 export default function MessagesPage() {
+  const [showToast, toastNode] = useToast();
   const [search, setSearch] = useState("");
   const [newMsgOpen, setNewMsgOpen] = useState(false);
   const [newMsg, setNewMsg] = useState({ phone: "", body: "" });
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
 
   const filtered = conversations.filter(c =>
     c.contact.name.toLowerCase().includes(search.toLowerCase()) ||
     c.contact.phone.includes(search)
   );
 
-  const open = filtered.filter(c => c.status === "open");
+  const open     = filtered.filter(c => c.status === "open");
   const resolved = filtered.filter(c => c.status === "resolved");
+
+  const handleSend = async () => {
+    if (!newMsg.phone.trim() || !newMsg.body.trim()) return;
+    setSending(true);
+    // TODO: await sendMessage({ phone: newMsg.phone, body: newMsg.body }) from api.ts
+    await new Promise(r => setTimeout(r, 1000));
+    setSending(false);
+    setSent(true);
+    setTimeout(() => {
+      setSent(false);
+      setNewMsgOpen(false);
+      setNewMsg({ phone: "", body: "" });
+      showToast(`Message sent to ${newMsg.phone}.`);
+    }, 1200);
+  };
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
+      {toastNode}
       <Topbar
         title="Messages"
         subtitle="Individual conversations"
         actions={
-          <Button size="sm" onClick={() => setNewMsgOpen(true)}>
+          <Button size="sm" onClick={() => { setNewMsgOpen(true); setSent(false); }}>
             <MessageSquare className="w-4 h-4" /> New Message
           </Button>
         }
@@ -122,22 +134,44 @@ export default function MessagesPage() {
         )}
       </main>
 
-      <Modal open={newMsgOpen} onClose={() => setNewMsgOpen(false)} title="New Message" size="md">
-        <div className="space-y-4">
-          <Input label="Phone Number" placeholder="+1 (416) 555-0100" value={newMsg.phone} onChange={e => setNewMsg(m => ({ ...m, phone: e.target.value }))} />
-          <Textarea
-            label="Message"
-            placeholder="Type your message..."
-            rows={4}
-            value={newMsg.body}
-            onChange={e => setNewMsg(m => ({ ...m, body: e.target.value }))}
-            hint={`${newMsg.body.length}/160 characters`}
-          />
-          <div className="flex gap-3">
-            <Button variant="outline" className="flex-1" onClick={() => setNewMsgOpen(false)}>Cancel</Button>
-            <Button className="flex-1" onClick={() => setNewMsgOpen(false)}>Send SMS</Button>
+      <Modal open={newMsgOpen} onClose={() => { setNewMsgOpen(false); setSent(false); setNewMsg({ phone: "", body: "" }); }} title="New Message" size="md">
+        {sent ? (
+          <div className="flex flex-col items-center gap-3 py-6 text-center">
+            <div className="w-14 h-14 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center">
+              <CheckCircle className="w-7 h-7 text-emerald-600 dark:text-emerald-400" />
+            </div>
+            <p className="font-semibold text-slate-900 dark:text-slate-100">Message Sent!</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">Delivered to {newMsg.phone}</p>
           </div>
-        </div>
+        ) : (
+          <div className="space-y-4">
+            <Input
+              label="Phone Number"
+              placeholder="+1 (416) 555-0100"
+              value={newMsg.phone}
+              onChange={e => setNewMsg(m => ({ ...m, phone: e.target.value }))}
+            />
+            <Textarea
+              label="Message"
+              placeholder="Type your message..."
+              rows={4}
+              value={newMsg.body}
+              onChange={e => setNewMsg(m => ({ ...m, body: e.target.value }))}
+              hint={`${newMsg.body.length}/160 characters`}
+            />
+            <div className="flex gap-3">
+              <Button variant="outline" className="flex-1" onClick={() => { setNewMsgOpen(false); setNewMsg({ phone: "", body: "" }); }}>Cancel</Button>
+              <Button
+                className="flex-1"
+                loading={sending}
+                disabled={!newMsg.phone.trim() || !newMsg.body.trim()}
+                onClick={handleSend}
+              >
+                <MessageSquare className="w-4 h-4" /> Send SMS
+              </Button>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   );

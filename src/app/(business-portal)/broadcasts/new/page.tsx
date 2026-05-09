@@ -8,23 +8,16 @@
  * DATA (currently mock — swap when backend is ready):
  *   AI suggestions → GET /api/ai/suggestions  (getAiSuggestions in api.ts)
  *   Create/send    → POST /api/broadcasts      (createBroadcast in api.ts)
- *
- * HOW TO CONNECT:
- *   import { getAiSuggestions, createBroadcast } from "@/lib/api";
- *   On mount: getAiSuggestions().then(setSuggestions)
- *   On final submit: createBroadcast({ name, message, audience_type, scheduled_at })
- *
- * SMS COUNTER: smsCharCount() in utils.ts — 160 chars = 1 segment, warn if over.
- * CASL: warn user if message body doesn't include "STOP" opt-out instruction.
  */
 import { useState, useRef } from "react";
-import { ArrowLeft, Sparkles, RefreshCw, Star, Users, RotateCcw, Radio, Calendar, Send, FileText, Paperclip, Image as ImageIcon, AlertTriangle, X } from "lucide-react";
+import { ArrowLeft, Sparkles, Star, Users, RotateCcw, Radio, Calendar, Send, FileText, Image as ImageIcon, AlertTriangle, X } from "lucide-react";
 import { Topbar } from "@/components/layout/Topbar";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input, Textarea } from "@/components/ui/Input";
 import { Badge } from "@/components/ui/Badge";
-import { getAiSuggestions } from "@/lib/mock-data"; // ← REMOVE when backend ready, use api.ts
+import { useToast } from "@/components/ui/Toast";
+import { getAiSuggestions } from "@/lib/mock-data";
 import { smsCharCount } from "@/lib/utils";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -45,6 +38,7 @@ const audienceColors: Record<string, string> = {
 
 export default function NewBroadcastPage() {
   const router = useRouter();
+  const [showToast, toastNode] = useToast();
   const [step, setStep] = useState(1);
   const [name, setName] = useState("");
   const [audience, setAudience] = useState("");
@@ -54,9 +48,11 @@ export default function NewBroadcastPage() {
   const [aiLoading, setAiLoading] = useState(false);
   const [suggestions] = useState(getAiSuggestions());
   const [showAi, setShowAi] = useState(false);
-
+  const [sending, setSending] = useState(false);
+  const [savingDraft, setSavingDraft] = useState(false);
   const [mmsFile, setMmsFile] = useState<File | null>(null);
   const [mmsPreview, setMmsPreview] = useState<string | null>(null);
+  const [mmsError, setMmsError] = useState("");
   const [quietHoursWarning, setQuietHoursWarning] = useState(false);
   const mmsRef = useRef<HTMLInputElement>(null);
 
@@ -66,7 +62,11 @@ export default function NewBroadcastPage() {
   const handleMmsFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 500 * 1024) { alert("Max file size is 500KB (MMS limit)."); return; }
+    if (file.size > 500 * 1024) {
+      setMmsError("File too large — max 500KB for MMS.");
+      return;
+    }
+    setMmsError("");
     setMmsFile(file);
     const reader = new FileReader();
     reader.onload = () => setMmsPreview(reader.result as string);
@@ -76,12 +76,24 @@ export default function NewBroadcastPage() {
   const checkQuietHours = (datetime: string) => {
     const d = new Date(datetime);
     const hour = d.getHours();
-    setQuietHoursWarning(hour >= 21 || hour < 8); // 9PM–8AM
+    setQuietHoursWarning(hour >= 21 || hour < 8);
     setScheduledAt(datetime);
   };
 
-  const handleSend = () => {
-    router.push("/broadcasts");
+  const handleSend = async () => {
+    setSending(true);
+    // TODO: await createBroadcast({ name, message, audience_type: audience, scheduled_at: scheduleType === "later" ? scheduledAt : null });
+    await new Promise(r => setTimeout(r, 1200));
+    setSending(false);
+    showToast(scheduleType === "now" ? `Broadcast "${name}" sent to ${selectedAudience?.count} contacts!` : `Broadcast "${name}" scheduled successfully!`);
+    setTimeout(() => router.push("/broadcasts"), 1500);
+  };
+
+  const handleSaveDraft = async () => {
+    setSavingDraft(true);
+    await new Promise(r => setTimeout(r, 800));
+    setSavingDraft(false);
+    showToast(`Draft "${name}" saved.`);
   };
 
   const handleAiPick = (body: string) => {
@@ -98,6 +110,7 @@ export default function NewBroadcastPage() {
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
+      {toastNode}
       <Topbar
         title="New Broadcast"
         subtitle={`Step ${step} of 3`}
@@ -164,13 +177,11 @@ export default function NewBroadcastPage() {
               </Button>
             </div>
 
-            {/* AI suggestions panel */}
             {showAi && (
               <div className="border border-brand-200 dark:border-brand-800 rounded-2xl overflow-hidden">
                 <div className="bg-brand-50 dark:bg-brand-950/40 px-4 py-3 flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-brand-600 dark:text-brand-400" />
                   <p className="text-sm font-semibold text-brand-700 dark:text-brand-300">AI-Generated Suggestions</p>
-                  <p className="text-xs text-brand-500 dark:text-brand-500 ml-1">Based on today's date & season</p>
                   <button onClick={() => setShowAi(false)} className="ml-auto text-brand-400 hover:text-brand-600 text-sm">✕</button>
                 </div>
                 <div className="divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900">
@@ -190,7 +201,6 @@ export default function NewBroadcastPage() {
               </div>
             )}
 
-            {/* Personalization tokens */}
             <div className="flex flex-wrap gap-2">
               <p className="text-xs text-slate-400 w-full">Insert token:</p>
               {["{{first_name}}", "{{business_name}}"].map(token => (
@@ -208,14 +218,14 @@ export default function NewBroadcastPage() {
               placeholder="Type your message here... Include STOP instructions for CASL compliance."
             />
 
-            {/* MMS image attach */}
             <div>
               <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-2">Attach Image (MMS) — optional, max 500KB JPG/PNG/GIF</p>
+              {mmsError && <p className="text-xs text-red-500 mb-2">{mmsError}</p>}
               {mmsPreview ? (
                 <div className="relative w-32 h-20 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={mmsPreview} alt="MMS" className="w-full h-full object-cover" />
-                  <button onClick={() => { setMmsFile(null); setMmsPreview(null); }} className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/60 text-white flex items-center justify-center">
+                  <button onClick={() => { setMmsFile(null); setMmsPreview(null); setMmsError(""); }} className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/60 text-white flex items-center justify-center">
                     <X className="w-3 h-3" />
                   </button>
                 </div>
@@ -227,7 +237,6 @@ export default function NewBroadcastPage() {
               <input ref={mmsRef} type="file" accept="image/jpeg,image/png,image/gif" className="hidden" onChange={handleMmsFile} />
             </div>
 
-            {/* Character counter */}
             <div className="flex items-center justify-between">
               <div className={`text-xs font-medium ${charInfo.len > 160 ? "text-amber-600" : "text-slate-500"}`}>
                 {charInfo.len} chars · {charInfo.segments} SMS segment{charInfo.segments > 1 ? "s" : ""} · {charInfo.remaining} remaining
@@ -260,8 +269,8 @@ export default function NewBroadcastPage() {
             <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Schedule</p>
             <div className="grid grid-cols-2 gap-3">
               {[
-                { id: "now", label: "Send Now", icon: <Send className="w-5 h-5" />, desc: "Send immediately" },
-                { id: "later", label: "Schedule", icon: <Calendar className="w-5 h-5" />, desc: "Pick a date & time" },
+                { id: "now",   label: "Send Now",  icon: <Send className="w-5 h-5" />,     desc: "Send immediately" },
+                { id: "later", label: "Schedule",  icon: <Calendar className="w-5 h-5" />, desc: "Pick a date & time" },
               ].map(opt => (
                 <button
                   key={opt.id}
@@ -283,14 +292,13 @@ export default function NewBroadcastPage() {
                     <AlertTriangle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
                     <div>
                       <p className="text-sm font-semibold text-red-700 dark:text-red-400">Quiet Hours Violation (TCPA/CASL)</p>
-                      <p className="text-xs text-red-600 dark:text-red-500 mt-0.5">No messages can be delivered between 9:00 PM and 8:00 AM local time. Please choose a time within the allowed window.</p>
+                      <p className="text-xs text-red-600 dark:text-red-500 mt-0.5">No messages between 9:00 PM and 8:00 AM local time.</p>
                     </div>
                   </div>
                 )}
               </>
             )}
 
-            {/* Review summary */}
             <Card>
               <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-3">Review Summary</p>
               <div className="space-y-2 text-sm">
@@ -304,8 +312,14 @@ export default function NewBroadcastPage() {
 
             <div className="flex gap-3">
               <Button variant="outline" onClick={() => setStep(2)}>← Back</Button>
-              <Button variant="outline"><FileText className="w-4 h-4" /> Save Draft</Button>
-              <Button onClick={handleSend} disabled={quietHoursWarning && scheduleType === "later"}>
+              <Button variant="outline" loading={savingDraft} onClick={handleSaveDraft}>
+                <FileText className="w-4 h-4" /> Save Draft
+              </Button>
+              <Button
+                loading={sending}
+                onClick={handleSend}
+                disabled={quietHoursWarning && scheduleType === "later"}
+              >
                 {scheduleType === "now" ? <><Send className="w-4 h-4" /> Send Now</> : <><Calendar className="w-4 h-4" /> Schedule</>}
               </Button>
             </div>
