@@ -12,11 +12,11 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variants: Record<Variant, string> = {
-  primary:   "bg-brand-600 hover:bg-brand-700 text-white shadow-sm",
-  secondary: "bg-brand-100 hover:bg-brand-200 text-brand-700 dark:bg-brand-900/40 dark:hover:bg-brand-900/60 dark:text-brand-300",
-  ghost:     "hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300",
-  danger:    "bg-red-600 hover:bg-red-700 text-white shadow-sm",
-  outline:   "border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300",
+  primary:   "bg-slate-950 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-200 text-white dark:text-slate-950 shadow-sm shadow-slate-950/10",
+  secondary: "bg-slate-100 hover:bg-slate-200 text-slate-900 dark:bg-white/10 dark:hover:bg-white/15 dark:text-slate-100",
+  ghost:     "hover:bg-white/70 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300",
+  danger:    "bg-red-600 hover:bg-red-700 text-white shadow-sm shadow-red-900/15",
+  outline:   "border border-slate-200/80 dark:border-white/10 bg-white/60 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 text-slate-700 dark:text-slate-300",
 };
 
 const sizes: Record<Size, string> = {
@@ -32,6 +32,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       disabled={disabled || loading}
       className={cn(
         "inline-flex items-center justify-center gap-2 font-medium transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 disabled:opacity-50 disabled:cursor-not-allowed",
+        "active:scale-[0.99]",
         variants[variant], sizes[size], className
       )}
       {...props}

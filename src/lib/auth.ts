@@ -51,17 +51,48 @@
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
+type MockUser = {
+  role: "admin" | "owner" | "manager" | "agent";
+  name: string;
+  email: string;
+  org?: string;
+};
+
+let memoryUser: MockUser | null = null;
+
+function storageAvailable(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    const key = "__woys_storage_test__";
+    window.localStorage.setItem(key, "1");
+    window.localStorage.removeItem(key);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function saveUser(user: MockUser) {
+  memoryUser = user;
+  if (!storageAvailable()) return;
+  try {
+    window.localStorage.setItem("woys_user", JSON.stringify(user));
+  } catch {
+    // Keep the in-memory demo session so login still works on restrictive browsers.
+  }
+}
+
 /**
- * MOCK ONLY — simulates login by writing user object to localStorage.
+ * MOCK ONLY — simulates login by writing user object to localStorage when available.
  * Replace with Clerk <SignIn /> or useSignIn() hook.
  */
 export function mockLogin(email: string, password: string, role: "business" | "admin"): boolean {
   if (role === "admin" && email === "admin@woys.ca" && password === "admin123") {
-    localStorage.setItem("woys_user", JSON.stringify({ role: "admin", name: "Woys Admin", email }));
+    saveUser({ role: "admin", name: "Woys Admin", email });
     return true;
   }
   if (role === "business" && email === "arash@billiardbar.ca" && password === "demo123") {
-    localStorage.setItem("woys_user", JSON.stringify({ role: "owner", name: "Arash Karimi", email, org: "Billiard Bar & Club" }));
+    saveUser({ role: "owner", name: "Arash Karimi", email, org: "Billiard Bar & Club" });
     return true;
   }
   return false;
@@ -72,7 +103,13 @@ export function mockLogin(email: string, password: string, role: "business" | "a
  * Replace with Clerk's useClerk().signOut().
  */
 export function mockLogout() {
-  localStorage.removeItem("woys_user");
+  memoryUser = null;
+  if (!storageAvailable()) return;
+  try {
+    window.localStorage.removeItem("woys_user");
+  } catch {
+    // No-op: logout should not crash the demo if browser storage is blocked.
+  }
 }
 
 /**
@@ -84,6 +121,11 @@ export function mockLogout() {
  */
 export function getUser() {
   if (typeof window === "undefined") return null;
-  const raw = localStorage.getItem("woys_user");
-  return raw ? JSON.parse(raw) : null;
+  if (!storageAvailable()) return memoryUser;
+  try {
+    const raw = window.localStorage.getItem("woys_user");
+    return raw ? JSON.parse(raw) : memoryUser;
+  } catch {
+    return memoryUser;
+  }
 }

@@ -214,7 +214,7 @@ export default function RegisterPage() {
 
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Industry</label>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                 {INDUSTRIES.map(ind => (
                   <button
                     key={ind}
@@ -236,7 +236,7 @@ export default function RegisterPage() {
                     onClick={() => setCountry(c)}
                     className={`p-3 rounded-xl border-2 text-sm font-medium transition-all ${country === c ? "border-brand-500 bg-brand-50 dark:bg-brand-950/30 text-brand-700 dark:text-brand-300" : "border-slate-100 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-slate-200 dark:hover:border-slate-700"}`}
                   >
-                    {c === "Canada" ? "🇨🇦 Canada" : "🇺🇸 United States"}
+                    {c}
                   </button>
                 ))}
               </div>
@@ -245,7 +245,7 @@ export default function RegisterPage() {
             {/* Contact info */}
             <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide pt-2">Your Contact Info</p>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <Input label="First Name" placeholder="Jane" value={firstName} onChange={e => setFirstName(e.target.value)} />
               <Input label="Last Name" placeholder="Smith" value={lastName} onChange={e => setLastName(e.target.value)} />
             </div>
@@ -315,7 +315,7 @@ export default function RegisterPage() {
               </span>
             </label>
 
-            <div className="flex gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row">
               <Button variant="outline" onClick={() => setStep(0)}>
                 <ArrowLeft className="w-4 h-4" /> Back
               </Button>
@@ -325,7 +325,7 @@ export default function RegisterPage() {
                 loading={loading}
                 onClick={handleSubmit}
               >
-                Submit — We'll Be in Touch 🚀
+                Submit - We'll Be in Touch
               </Button>
             </div>
           </div>

@@ -37,7 +37,7 @@ export default function AdminBusinessesPage() {
   return (
     <div className="flex flex-col h-full overflow-hidden">
       <Topbar title="Businesses" subtitle={`${adminOrganizations.length} registered organizations`} />
-      <main className="flex-1 overflow-y-auto p-6 space-y-4">
+      <main className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
         <Input
           placeholder="Search businesses..."
           value={search}

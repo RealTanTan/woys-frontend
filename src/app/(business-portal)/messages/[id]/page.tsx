@@ -94,7 +94,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
       />
 
       {/* Contact info strip */}
-      <div className="px-6 py-3 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3 flex-wrap">
+      <div className="px-4 py-3 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3 flex-wrap sm:px-6">
         <div className="w-8 h-8 rounded-full bg-brand-100 dark:bg-brand-900/40 flex items-center justify-center text-brand-700 dark:text-brand-300 font-semibold text-sm">
           {conv.contact.name.charAt(0)}
         </div>
@@ -108,13 +108,13 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
             {conv.contact.consent_status === "given" ? "CASL Consented" : conv.contact.consent_status === "pending" ? "Consent Pending" : "Opted Out"}
           </Badge>
         </div>
-        <div className="ml-auto">
+        <div className="ml-0 sm:ml-auto">
           <Badge color={conv.status === "open" ? "blue" : "gray"}>{conv.status}</Badge>
         </div>
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 sm:p-6">
         {conv.messages.map((msg) => {
           const isOut = msg.direction === "outbound";
           return (
@@ -124,7 +124,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
                   {conv.contact.name.charAt(0)}
                 </div>
               )}
-              <div className={cn("max-w-xs lg:max-w-md", isOut ? "items-end" : "items-start", "flex flex-col gap-1")}>
+              <div className={cn("max-w-[78vw] sm:max-w-xs lg:max-w-md", isOut ? "items-end" : "items-start", "flex flex-col gap-1")}>
                 <div className={cn(
                   "px-4 py-2.5 rounded-2xl text-sm",
                   isOut
@@ -145,13 +145,13 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
       </div>
 
       {/* Reply box */}
-      <div className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900">
+      <div className="px-4 py-4 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 sm:px-6">
         {conv.contact.consent_status === "opted_out" ? (
           <div className="p-3 bg-red-50 dark:bg-red-950/30 border border-red-100 dark:border-red-900/40 rounded-xl text-sm text-red-600 dark:text-red-400 text-center">
             This contact opted out — you cannot send further messages (CASL compliance).
           </div>
         ) : (
-          <div className="flex items-end gap-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
             <div className="flex-1">
               <textarea
                 value={reply}
@@ -163,7 +163,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
               />
               <p className="text-xs text-slate-400 mt-1 text-right">{reply.length}/160</p>
             </div>
-            <Button className="shrink-0 mb-6" disabled={!reply.trim()} loading={sending} onClick={handleSend}>
+            <Button className="shrink-0 sm:mb-6" disabled={!reply.trim()} loading={sending} onClick={handleSend}>
               <Send className="w-4 h-4" />
               Send
             </Button>

@@ -3,28 +3,68 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --color-brand-50:  #eff8ff;
-  --color-brand-100: #dbeffe;
-  --color-brand-200: #b9e0fd;
-  --color-brand-300: #7cc8fb;
-  --color-brand-400: #38adf7;
-  --color-brand-500: #0e93e8;
-  --color-brand-600: #0274c6;
-  --color-brand-700: #035da0;
-  --color-brand-800: #074f84;
-  --color-brand-900: #0c426d;
-  --color-brand-950: #082a48;
+  --color-brand-50:  #f0fdf9;
+  --color-brand-100: #ccfbef;
+  --color-brand-200: #99f6df;
+  --color-brand-300: #5eeacc;
+  --color-brand-400: #2dd4b3;
+  --color-brand-500: #14b89d;
+  --color-brand-600: #0d9488;
+  --color-brand-700: #0f766e;
+  --color-brand-800: #115e59;
+  --color-brand-900: #134e4a;
+  --color-brand-950: #042f2e;
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
 }
 
 * { box-sizing: border-box; }
 
+html {
+  background: #f8fafc;
+}
+
 body {
   font-family: var(--font-sans);
   transition: background-color 0.2s, color 0.2s;
+  color: #0f172a;
+  background:
+    radial-gradient(circle at top left, rgba(20, 184, 157, 0.12), transparent 34rem),
+    linear-gradient(135deg, #f8fafc 0%, #eef7f4 52%, #f8fafc 100%);
+}
+
+.dark body {
+  color: #e2e8f0;
+  background:
+    radial-gradient(circle at top left, rgba(20, 184, 157, 0.16), transparent 32rem),
+    linear-gradient(135deg, #020617 0%, #081b1d 52%, #020617 100%);
+}
+
+::selection {
+  background: rgba(20, 184, 157, 0.24);
+}
+
+.premium-surface {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.92), rgba(255,255,255,0.78));
+  box-shadow: 0 18px 60px -48px rgba(15, 23, 42, 0.55);
+}
+
+.dark .premium-surface {
+  background:
+    linear-gradient(180deg, rgba(15,23,42,0.84), rgba(15,23,42,0.68));
+  box-shadow: 0 24px 80px -52px rgba(0, 0, 0, 0.86);
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.42s ease-out both;
 }
 
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
-.dark ::-webkit-scrollbar-thumb { background: #374151; }
+::-webkit-scrollbar-thumb { background: #99f6df; border-radius: 999px; }
+.dark ::-webkit-scrollbar-thumb { background: #115e59; }

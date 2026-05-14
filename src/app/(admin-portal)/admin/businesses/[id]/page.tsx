@@ -15,7 +15,7 @@ import { Card, StatCard } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
-import { Input, Textarea } from "@/components/ui/Input";
+import { Textarea } from "@/components/ui/Input";
 import { useToast } from "@/components/ui/Toast";
 import { adminOrganizations } from "@/lib/mock-data";
 import { formatDate, planLabel } from "@/lib/utils";
@@ -133,7 +133,7 @@ export default function AdminBusinessDetailPage({ params }: { params: Promise<{ 
           </Link>
         }
       />
-      <main className="flex-1 overflow-y-auto p-6 space-y-5">
+      <main className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5">
         <div className="flex items-center gap-3 flex-wrap">
           <Badge color={org.status === "active" ? "green" : org.status === "trial" ? "yellow" : "red"}>{org.status}</Badge>
           <Badge color={planColors[org.plan]}>{planLabel(org.plan)}</Badge>
@@ -213,7 +213,7 @@ export default function AdminBusinessDetailPage({ params }: { params: Promise<{ 
               {PLANS.map(p => <option key={p} value={p}>{planLabel(p)}</option>)}
             </select>
           </div>
-          <div className="flex gap-3">
+          <div className="flex flex-col gap-3 sm:flex-row">
             <Button variant="outline" className="flex-1" onClick={() => setUpgradeOpen(false)}>Cancel</Button>
             <Button className="flex-1" loading={upgradeLoading} onClick={handleUpgrade}>Apply Plan</Button>
           </div>
@@ -226,7 +226,7 @@ export default function AdminBusinessDetailPage({ params }: { params: Promise<{ 
           <p className="text-sm text-slate-600 dark:text-slate-400">
             Reset <strong>{org.name}</strong>'s message usage to 0 for this billing cycle?
           </p>
-          <div className="flex gap-3">
+          <div className="flex flex-col gap-3 sm:flex-row">
             <Button variant="outline" className="flex-1" onClick={() => setResetOpen(false)}>Cancel</Button>
             <Button className="flex-1" loading={resetLoading} onClick={handleResetUsage}>Reset Usage</Button>
           </div>
@@ -246,10 +246,10 @@ export default function AdminBusinessDetailPage({ params }: { params: Promise<{ 
               ? `Suspend ${org.name}? They will lose access immediately and cannot send SMS.`
               : `Reactivate ${org.name}? They will regain full platform access.`}
           </p>
-          <div className="flex gap-3">
+          <div className="flex flex-col gap-3 sm:flex-row">
             <Button variant="outline" className="flex-1" onClick={() => setSuspendOpen(false)}>Cancel</Button>
             <Button
-              variant={org.status === "active" ? "danger" : "primary" as "danger"}
+              variant={org.status === "active" ? "danger" : "primary"}
               className="flex-1"
               loading={suspendLoading}
               onClick={handleSuspend}
@@ -271,7 +271,7 @@ export default function AdminBusinessDetailPage({ params }: { params: Promise<{ 
             value={notifMsg}
             onChange={e => setNotifMsg(e.target.value)}
           />
-          <div className="flex gap-3">
+          <div className="flex flex-col gap-3 sm:flex-row">
             <Button variant="outline" className="flex-1" onClick={() => setNotifOpen(false)}>Cancel</Button>
             <Button className="flex-1" loading={notifLoading} disabled={!notifMsg.trim()} onClick={handleSendNotif}>
               Send Notification

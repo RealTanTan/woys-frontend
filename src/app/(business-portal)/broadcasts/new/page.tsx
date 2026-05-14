@@ -9,7 +9,7 @@
  *   AI suggestions → GET /api/ai/suggestions  (getAiSuggestions in api.ts)
  *   Create/send    → POST /api/broadcasts      (createBroadcast in api.ts)
  */
-import { useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { ArrowLeft, Sparkles, Star, Users, RotateCcw, Radio, Calendar, Send, FileText, Image as ImageIcon, AlertTriangle, X } from "lucide-react";
 import { Topbar } from "@/components/layout/Topbar";
 import { Card } from "@/components/ui/Card";
@@ -39,6 +39,7 @@ const audienceColors: Record<string, string> = {
 export default function NewBroadcastPage() {
   const router = useRouter();
   const [showToast, toastNode] = useToast();
+  const [prefilled, setPrefilled] = useState(false);
   const [step, setStep] = useState(1);
   const [name, setName] = useState("");
   const [audience, setAudience] = useState("");
@@ -58,6 +59,23 @@ export default function NewBroadcastPage() {
 
   const charInfo = smsCharCount(message);
   const selectedAudience = audiences.find(a => a.id === audience);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const msg = params.get("msg");
+    const audienceParam = params.get("audience");
+    if (audienceParam && audiences.some(a => a.id === audienceParam)) {
+      setAudience(audienceParam);
+      setName(`${audiences.find(a => a.id === audienceParam)?.label} Campaign`);
+    }
+    if (msg) {
+      setMessage(msg);
+      setName("AI Recommended Campaign");
+      setAudience(audienceParam && audiences.some(a => a.id === audienceParam) ? audienceParam : "all");
+      setStep(2);
+      setPrefilled(true);
+    }
+  }, []);
 
   const handleMmsFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -112,17 +130,17 @@ export default function NewBroadcastPage() {
     <div className="flex flex-col h-full overflow-hidden">
       {toastNode}
       <Topbar
-        title="New Broadcast"
-        subtitle={`Step ${step} of 3`}
+        title="New Campaign"
+        subtitle={prefilled ? `Suggestion loaded - step ${step} of 3` : `A guided SMS campaign in three simple steps.`}
         actions={
           <Link href="/broadcasts">
-            <Button variant="ghost" size="sm"><ArrowLeft className="w-4 h-4" /> Cancel</Button>
+            <Button variant="ghost" size="sm"><ArrowLeft className="w-4 h-4" /> Back</Button>
           </Link>
         }
       />
-      <main className="flex-1 overflow-y-auto p-6">
+      <main className="flex-1 overflow-y-auto p-4 sm:p-6">
         {/* Progress */}
-        <div className="flex items-center gap-3 mb-8">
+        <div className="flex items-center gap-2 mb-8 sm:gap-3">
           {["Audience", "Message", "Schedule"].map((s, i) => (
             <div key={s} className="flex items-center gap-3">
               <div className={`flex items-center gap-2 ${step > i + 1 ? "text-brand-600 dark:text-brand-400" : step === i + 1 ? "text-brand-600 dark:text-brand-400" : "text-slate-400"}`}>
@@ -131,7 +149,7 @@ export default function NewBroadcastPage() {
                 </div>
                 <span className="text-sm font-medium hidden sm:inline">{s}</span>
               </div>
-              {i < 2 && <div className={`h-px w-12 ${step > i + 1 ? "bg-brand-500" : "bg-slate-200 dark:bg-slate-700"}`} />}
+              {i < 2 && <div className={`h-px w-8 sm:w-12 ${step > i + 1 ? "bg-brand-500" : "bg-slate-200 dark:bg-slate-700"}`} />}
             </div>
           ))}
         </div>
@@ -139,9 +157,9 @@ export default function NewBroadcastPage() {
         {/* Step 1: Audience */}
         {step === 1 && (
           <div className="max-w-2xl space-y-4">
-            <Input label="Broadcast Name" placeholder="e.g. Easter Weekend Special" value={name} onChange={e => setName(e.target.value)} />
+            <Input label="Campaign name" placeholder="e.g. Friday table bookings" value={name} onChange={e => setName(e.target.value)} />
             <div>
-              <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">Select Audience</p>
+              <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">Who should receive it?</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {audiences.map((a) => (
                   <button
@@ -170,10 +188,13 @@ export default function NewBroadcastPage() {
         {/* Step 2: Message */}
         {step === 2 && (
           <div className="max-w-2xl space-y-5">
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Compose Message</p>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Write the text</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Keep it short, clear, and include STOP.</p>
+              </div>
               <Button variant="secondary" size="sm" onClick={simulateAi} loading={aiLoading}>
-                <Sparkles className="w-4 h-4" /> AI Suggestions
+                <Sparkles className="w-4 h-4" /> Get Ideas
               </Button>
             </div>
 
@@ -181,13 +202,13 @@ export default function NewBroadcastPage() {
               <div className="border border-brand-200 dark:border-brand-800 rounded-2xl overflow-hidden">
                 <div className="bg-brand-50 dark:bg-brand-950/40 px-4 py-3 flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-brand-600 dark:text-brand-400" />
-                  <p className="text-sm font-semibold text-brand-700 dark:text-brand-300">AI-Generated Suggestions</p>
+                  <p className="text-sm font-semibold text-brand-700 dark:text-brand-300">Campaign ideas</p>
                   <button onClick={() => setShowAi(false)} className="ml-auto text-brand-400 hover:text-brand-600 text-sm">✕</button>
                 </div>
                 <div className="divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900">
                   {suggestions.map((s, i) => (
                     <div key={i} className="p-4">
-                      <div className="flex items-start justify-between gap-3">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                         <div className="flex-1">
                           <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-1">{s.title}</p>
                           <p className="text-sm text-slate-700 dark:text-slate-300 mb-2">{s.body}</p>
@@ -202,7 +223,7 @@ export default function NewBroadcastPage() {
             )}
 
             <div className="flex flex-wrap gap-2">
-              <p className="text-xs text-slate-400 w-full">Insert token:</p>
+              <p className="text-xs text-slate-400 w-full">Personalize with:</p>
               {["{{first_name}}", "{{business_name}}"].map(token => (
                 <button key={token} onClick={() => setMessage(m => m + token)} className="text-xs px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-brand-100 dark:hover:bg-brand-900/30 hover:text-brand-700 dark:hover:text-brand-300 transition font-mono">
                   {token}
@@ -215,11 +236,11 @@ export default function NewBroadcastPage() {
               rows={5}
               value={message}
               onChange={e => setMessage(e.target.value)}
-              placeholder="Type your message here... Include STOP instructions for CASL compliance."
+              placeholder="Example: Hi {{first_name}}, tables are filling up tonight. Book before 7 PM and get your second hour half off. Reply STOP to opt out."
             />
 
             <div>
-              <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-2">Attach Image (MMS) — optional, max 500KB JPG/PNG/GIF</p>
+              <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-2">Add an image (optional)</p>
               {mmsError && <p className="text-xs text-red-500 mb-2">{mmsError}</p>}
               {mmsPreview ? (
                 <div className="relative w-32 h-20 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700">
@@ -230,14 +251,14 @@ export default function NewBroadcastPage() {
                   </button>
                 </div>
               ) : (
-                <button onClick={() => mmsRef.current?.click()} className="flex items-center gap-2 px-3 py-2 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 text-slate-400 hover:border-brand-400 hover:text-brand-500 transition text-sm">
-                  <ImageIcon className="w-4 h-4" /> Attach Image
+                <button onClick={() => mmsRef.current?.click()} className="flex items-center gap-2 px-3 py-2 rounded-xl border border-dashed border-slate-200 dark:border-slate-700 text-slate-500 hover:border-slate-400 hover:text-slate-700 dark:hover:text-slate-300 transition text-sm">
+                  <ImageIcon className="w-4 h-4" /> Choose Image
                 </button>
               )}
               <input ref={mmsRef} type="file" accept="image/jpeg,image/png,image/gif" className="hidden" onChange={handleMmsFile} />
             </div>
 
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div className={`text-xs font-medium ${charInfo.len > 160 ? "text-amber-600" : "text-slate-500"}`}>
                 {charInfo.len} chars · {charInfo.segments} SMS segment{charInfo.segments > 1 ? "s" : ""} · {charInfo.remaining} remaining
               </div>
@@ -250,15 +271,15 @@ export default function NewBroadcastPage() {
               <Card className="flex items-center gap-3 bg-slate-50 dark:bg-slate-800 border-0">
                 <div className="p-2 rounded-xl bg-white dark:bg-slate-700">{selectedAudience.icon}</div>
                 <div>
-                  <p className="text-sm font-medium text-slate-900 dark:text-slate-100">Sending to: {selectedAudience.label}</p>
+                  <p className="text-sm font-medium text-slate-900 dark:text-slate-100">Audience: {selectedAudience.label}</p>
                   <p className="text-xs text-slate-500 dark:text-slate-400">{selectedAudience.count} contacts with active CASL consent</p>
                 </div>
               </Card>
             )}
 
-            <div className="flex gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row">
               <Button variant="outline" onClick={() => setStep(1)}>← Back</Button>
-              <Button disabled={!message.trim()} onClick={() => setStep(3)}>Continue →</Button>
+              <Button disabled={!message.trim() || !name.trim() || !audience} onClick={() => setStep(3)}>Continue →</Button>
             </div>
           </div>
         )}
@@ -266,11 +287,11 @@ export default function NewBroadcastPage() {
         {/* Step 3: Schedule */}
         {step === 3 && (
           <div className="max-w-2xl space-y-5">
-            <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Schedule</p>
-            <div className="grid grid-cols-2 gap-3">
+            <p className="text-sm font-medium text-slate-700 dark:text-slate-300">When should it send?</p>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {[
-                { id: "now",   label: "Send Now",  icon: <Send className="w-5 h-5" />,     desc: "Send immediately" },
-                { id: "later", label: "Schedule",  icon: <Calendar className="w-5 h-5" />, desc: "Pick a date & time" },
+                { id: "now",   label: "Send now",  icon: <Send className="w-5 h-5" />,     desc: "Start sending right away" },
+                { id: "later", label: "Schedule",  icon: <Calendar className="w-5 h-5" />, desc: "Choose a date and time" },
               ].map(opt => (
                 <button
                   key={opt.id}
@@ -300,17 +321,17 @@ export default function NewBroadcastPage() {
             )}
 
             <Card>
-              <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-3">Review Summary</p>
+              <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-3">Check before sending</p>
               <div className="space-y-2 text-sm">
-                <div className="flex justify-between"><span className="text-slate-500">Name</span><span className="font-medium text-slate-900 dark:text-slate-100">{name}</span></div>
-                <div className="flex justify-between"><span className="text-slate-500">Audience</span><span className="font-medium text-slate-900 dark:text-slate-100">{selectedAudience?.label} ({selectedAudience?.count})</span></div>
-                <div className="flex justify-between"><span className="text-slate-500">Message length</span><span className="font-medium text-slate-900 dark:text-slate-100">{charInfo.len} chars · {charInfo.segments} segment{charInfo.segments > 1 ? "s" : ""}</span></div>
-                <div className="flex justify-between"><span className="text-slate-500">Send</span><span className="font-medium text-slate-900 dark:text-slate-100">{scheduleType === "now" ? "Immediately" : scheduledAt || "—"}</span></div>
-                {mmsFile && <div className="flex justify-between"><span className="text-slate-500">Attachment</span><span className="font-medium text-slate-900 dark:text-slate-100">📎 {mmsFile.name}</span></div>}
+                <div className="flex justify-between gap-4"><span className="text-slate-500">Name</span><span className="text-right font-medium text-slate-900 dark:text-slate-100">{name}</span></div>
+                <div className="flex justify-between gap-4"><span className="text-slate-500">Audience</span><span className="text-right font-medium text-slate-900 dark:text-slate-100">{selectedAudience?.label} ({selectedAudience?.count})</span></div>
+                <div className="flex justify-between gap-4"><span className="text-slate-500">Message length</span><span className="text-right font-medium text-slate-900 dark:text-slate-100">{charInfo.len} chars · {charInfo.segments} segment{charInfo.segments > 1 ? "s" : ""}</span></div>
+                <div className="flex justify-between gap-4"><span className="text-slate-500">Send</span><span className="text-right font-medium text-slate-900 dark:text-slate-100">{scheduleType === "now" ? "Immediately" : scheduledAt || "—"}</span></div>
+                {mmsFile && <div className="flex justify-between gap-4"><span className="text-slate-500">Attachment</span><span className="text-right font-medium text-slate-900 dark:text-slate-100">{mmsFile.name}</span></div>}
               </div>
             </Card>
 
-            <div className="flex gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row">
               <Button variant="outline" onClick={() => setStep(2)}>← Back</Button>
               <Button variant="outline" loading={savingDraft} onClick={handleSaveDraft}>
                 <FileText className="w-4 h-4" /> Save Draft
@@ -320,7 +341,7 @@ export default function NewBroadcastPage() {
                 onClick={handleSend}
                 disabled={quietHoursWarning && scheduleType === "later"}
               >
-                {scheduleType === "now" ? <><Send className="w-4 h-4" /> Send Now</> : <><Calendar className="w-4 h-4" /> Schedule</>}
+                {scheduleType === "now" ? <><Send className="w-4 h-4" /> Send Now</> : <><Calendar className="w-4 h-4" /> Schedule Campaign</>}
               </Button>
             </div>
           </div>

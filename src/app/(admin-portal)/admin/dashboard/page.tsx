@@ -17,7 +17,7 @@
  *
  * AUTH: admin routes must be protected server-side — verify Clerk role === "super_admin".
  */
-import { Building2, MessageSquare, Users, TrendingUp, AlertCircle, CheckCircle } from "lucide-react";
+import { Building2, MessageSquare, AlertCircle, CheckCircle } from "lucide-react";
 import { Topbar } from "@/components/layout/Topbar";
 import { Card, StatCard } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
@@ -28,14 +28,13 @@ import Link from "next/link";
 
 export default function AdminDashboardPage() {
   const totalMessages = adminOrganizations.reduce((s, o) => s + o.messages_used, 0);
-  const totalContacts = adminOrganizations.reduce((s, o) => s + o.contacts_count, 0);
   const activeOrgs = adminOrganizations.filter(o => o.status === "active").length;
   const openTickets = adminTickets.filter(t => t.status === "open").length;
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
       <Topbar title="Admin Dashboard" subtitle="Platform overview — WOYS Internal" />
-      <main className="flex-1 overflow-y-auto p-6 space-y-6">
+      <main className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard label="Total Businesses" value={adminOrganizations.length} icon={<Building2 className="w-5 h-5" />} color="brand" />

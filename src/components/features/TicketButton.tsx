@@ -1,8 +1,9 @@
 "use client";
-import { useState, useRef } from "react";
-import { Headphones, X, Send, Paperclip, Image, CheckCircle } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Headphones, X, Send, Paperclip, Image as ImageIcon, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { cn } from "@/lib/utils";
+import { OverlayPortal } from "@/components/ui/OverlayPortal";
+import { layers } from "@/lib/layers";
 
 export function TicketButton() {
   const [open, setOpen] = useState(false);
@@ -33,7 +34,7 @@ export function TicketButton() {
     setSubmitted(true);
   };
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     setOpen(false);
     setTimeout(() => {
       setSubmitted(false);
@@ -41,14 +42,24 @@ export function TicketButton() {
       setScreenshot(null);
       setScreenshotPreview(null);
     }, 300);
-  };
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") handleClose();
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [handleClose, open]);
 
   return (
     <>
       {/* Floating button */}
       <button
         onClick={() => setOpen(true)}
-        className="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-brand-600 hover:bg-brand-700 text-white shadow-lg shadow-brand-600/40 flex items-center justify-center transition-all hover:scale-105 active:scale-95"
+        className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-brand-600 hover:bg-brand-700 text-white shadow-lg shadow-brand-600/40 flex items-center justify-center transition-all hover:scale-105 active:scale-95"
+        style={{ zIndex: layers.dropdown - 10 }}
         aria-label="Contact Support"
       >
         <Headphones className="w-6 h-6" />
@@ -56,11 +67,12 @@ export function TicketButton() {
 
       {/* Backdrop */}
       {open && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={handleClose} />
+        <OverlayPortal>
+          <div className="fixed inset-0 flex items-end sm:items-center justify-center sm:p-4" style={{ zIndex: layers.modal }}>
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={handleClose} />
 
-          {/* Modal panel */}
-          <div className="relative w-full sm:max-w-md bg-white dark:bg-slate-900 sm:rounded-2xl rounded-t-2xl shadow-2xl border border-slate-100 dark:border-slate-800 flex flex-col max-h-[90vh]">
+            {/* Modal panel */}
+            <div className="relative w-full sm:max-w-md bg-white dark:bg-slate-900 sm:rounded-2xl rounded-t-2xl shadow-2xl border border-slate-100 dark:border-slate-800 flex flex-col max-h-[90vh]">
 
             {/* Header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
@@ -151,7 +163,7 @@ export function TicketButton() {
                           <X className="w-3.5 h-3.5" />
                         </button>
                         <div className="px-3 py-2 bg-slate-50 dark:bg-slate-800 text-xs text-slate-500 flex items-center gap-1">
-                          <Image className="w-3 h-3" />{screenshot?.name}
+                          <ImageIcon className="w-3 h-3" />{screenshot?.name}
                         </div>
                       </div>
                     ) : (
@@ -180,8 +192,9 @@ export function TicketButton() {
                 </form>
               )}
             </div>
+            </div>
           </div>
-        </div>
+        </OverlayPortal>
       )}
     </>
   );

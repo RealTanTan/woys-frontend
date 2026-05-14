@@ -117,7 +117,7 @@ export default function SettingsPage() {
     <div className="flex flex-col h-full overflow-hidden">
       {toastNode}
       <Topbar title="Settings" />
-      <main className="flex-1 overflow-y-auto p-6 space-y-6">
+      <main className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
         <Tabs tabs={tabs} active={tab} onChange={setTab} className="w-fit" />
 
         {/* GENERAL */}
@@ -158,12 +158,12 @@ export default function SettingsPage() {
         {tab === "team" && (
           <div className="max-w-2xl space-y-5">
             <Card padding={false}>
-              <div className="p-4 border-b border-slate-50 dark:border-slate-800 flex items-center justify-between">
+              <div className="p-4 border-b border-slate-50 dark:border-slate-800 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Team Members ({team.length})</p>
                 <Button size="sm" onClick={() => setInviteOpen(true)}><Plus className="w-4 h-4" /> Invite Member</Button>
               </div>
               {team.map((m) => (
-                <div key={m.id} className="flex items-center gap-4 p-4 border-b border-slate-50 dark:border-slate-800 last:border-0">
+                <div key={m.id} className="flex items-center gap-3 p-4 border-b border-slate-50 dark:border-slate-800 last:border-0 sm:gap-4">
                   <div className="w-9 h-9 rounded-full bg-brand-100 dark:bg-brand-900/40 flex items-center justify-center text-brand-700 dark:text-brand-300 font-semibold text-sm">
                     {m.name.charAt(0)}
                   </div>
@@ -171,7 +171,9 @@ export default function SettingsPage() {
                     <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{m.name}</p>
                     <p className="text-xs text-slate-500 dark:text-slate-400">{m.email}</p>
                   </div>
-                  <Badge color={roleColors[m.role]}>{m.role.charAt(0).toUpperCase() + m.role.slice(1)}</Badge>
+                  <div className="hidden sm:block">
+                    <Badge color={roleColors[m.role]}>{m.role.charAt(0).toUpperCase() + m.role.slice(1)}</Badge>
+                  </div>
                   {m.role !== "owner" && (
                     <button
                       onClick={() => setDeleteTarget(m)}
@@ -262,7 +264,7 @@ export default function SettingsPage() {
                 { name: "Pro",        price: "$199",   sms: "15,000",    contacts: "10,000",    current: false },
                 { name: "Enterprise", price: "Custom", sms: "Unlimited", contacts: "Unlimited", current: false },
               ].map(plan => (
-                <div key={plan.name} className={`p-4 rounded-2xl border-2 flex items-center justify-between ${plan.current ? "border-brand-400 dark:border-brand-600 bg-brand-50 dark:bg-brand-950/30" : "border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900"}`}>
+                <div key={plan.name} className={`p-4 rounded-2xl border-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between ${plan.current ? "border-brand-400 dark:border-brand-600 bg-brand-50 dark:bg-brand-950/30" : "border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900"}`}>
                   <div>
                     <div className="flex items-center gap-2">
                       <p className="font-semibold text-slate-900 dark:text-slate-100">{plan.name}</p>
@@ -270,7 +272,7 @@ export default function SettingsPage() {
                     </div>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{plan.sms} SMS · {plan.contacts} contacts</p>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-between gap-3 sm:justify-end">
                     <p className="font-bold text-slate-900 dark:text-slate-100">
                       {plan.price}<span className="text-xs font-normal text-slate-400">{plan.price !== "Custom" ? "/mo" : ""}</span>
                     </p>
@@ -309,7 +311,7 @@ export default function SettingsPage() {
                       This will cancel your subscription. You'll lose access at end of billing cycle.
                     </p>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex flex-col gap-2 sm:flex-row">
                     <Button variant="danger" size="sm" loading={cancelLoading} onClick={handleCancelSubscription}>
                       Yes, Cancel My Subscription
                     </Button>
@@ -349,7 +351,7 @@ export default function SettingsPage() {
               <option value="manager">Manager — Contacts, broadcasts, templates</option>
             </select>
           </div>
-          <div className="flex gap-3 pt-1">
+          <div className="flex flex-col gap-3 pt-1 sm:flex-row">
             <Button variant="outline" className="flex-1" onClick={() => setInviteOpen(false)}>Cancel</Button>
             <Button
               className="flex-1"
@@ -369,7 +371,7 @@ export default function SettingsPage() {
           <p className="text-sm text-slate-600 dark:text-slate-400">
             Remove <strong>{deleteTarget?.name}</strong> from the team? They will lose all access immediately.
           </p>
-          <div className="flex gap-3">
+          <div className="flex flex-col gap-3 sm:flex-row">
             <Button variant="outline" className="flex-1" onClick={() => setDeleteTarget(null)}>Cancel</Button>
             <Button variant="danger" className="flex-1" loading={deleteLoading} onClick={handleDeleteMember}>Remove</Button>
           </div>

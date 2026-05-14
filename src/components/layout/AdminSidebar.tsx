@@ -20,10 +20,10 @@ export function AdminSidebar() {
   const router = useRouter();
 
   return (
-    <aside className="flex flex-col w-64 shrink-0 h-screen bg-slate-950 border-r border-slate-800">
+    <aside className="hidden md:flex flex-col w-64 shrink-0 h-screen bg-slate-950 border-r border-white/10">
       <div className="flex items-center gap-3 px-5 py-5 border-b border-slate-800">
-        <div className="w-8 h-8 bg-brand-600 rounded-lg flex items-center justify-center">
-          <Shield className="w-4 h-4 text-white" />
+        <div className="w-9 h-9 bg-brand-400 rounded-xl flex items-center justify-center">
+          <Shield className="w-4 h-4 text-slate-950" />
         </div>
         <div>
           <p className="font-bold text-white text-lg leading-none">WOYS</p>
@@ -41,7 +41,7 @@ export function AdminSidebar() {
               className={cn(
                 "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all",
                 active
-                  ? "bg-brand-600/20 text-brand-400"
+                  ? "bg-brand-400 text-slate-950"
                   : "text-slate-400 hover:bg-slate-800 hover:text-slate-200"
               )}
             >

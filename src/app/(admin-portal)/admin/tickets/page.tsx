@@ -18,10 +18,9 @@
  * SCREENSHOTS: sent as multipart/form-data. See adminReplyTicket() in api.ts for the form shape.
  * REALTIME: subscribe to new ticket messages via Supabase Realtime for live updates.
  */
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Send, Image as ImageIcon, Paperclip, X, Shield, Building2 } from "lucide-react";
 import { Topbar } from "@/components/layout/Topbar";
-import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Tabs } from "@/components/ui/Tabs";
@@ -29,7 +28,8 @@ import { adminTickets } from "@/lib/mock-data"; // ← REMOVE when backend ready
 import { formatDate, formatTime, formatRelative } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import type { Ticket, TicketMessage } from "@/types";
-import { useRef } from "react";
+import { OverlayPortal } from "@/components/ui/OverlayPortal";
+import { layers } from "@/lib/layers";
 
 function TicketBadges({ ticket }: { ticket: Ticket }) {
   return (
@@ -47,6 +47,15 @@ function TicketBadges({ ticket }: { ticket: Ticket }) {
 function ChatBubble({ msg }: { msg: TicketMessage }) {
   const isAdmin = msg.sender_role === "admin";
   const [imgOpen, setImgOpen] = useState(false);
+
+  useEffect(() => {
+    if (!imgOpen) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setImgOpen(false);
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [imgOpen]);
 
   return (
     <div className={cn("flex gap-3", isAdmin ? "flex-row-reverse" : "flex-row")}>
@@ -107,21 +116,26 @@ function ChatBubble({ msg }: { msg: TicketMessage }) {
 
       {/* Lightbox */}
       {imgOpen && msg.screenshot_url && (
-        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-6" onClick={() => setImgOpen(false)}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={msg.screenshot_url} alt="Screenshot" className="max-w-full max-h-full rounded-xl shadow-2xl" />
-          <button className="absolute top-4 right-4 w-8 h-8 bg-white/10 rounded-full flex items-center justify-center text-white hover:bg-white/20">
-            <X className="w-4 h-4" />
-          </button>
-        </div>
+        <OverlayPortal>
+          <div
+            className="fixed inset-0 bg-black/80 flex items-center justify-center p-6"
+            style={{ zIndex: layers.modal }}
+            onClick={() => setImgOpen(false)}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={msg.screenshot_url} alt="Screenshot" className="max-w-full max-h-full rounded-xl shadow-2xl" />
+            <button onClick={() => setImgOpen(false)} className="absolute top-4 right-4 w-8 h-8 bg-white/10 rounded-full flex items-center justify-center text-white hover:bg-white/20">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </OverlayPortal>
       )}
     </div>
   );
 }
 
-function TicketThread({ ticket, onClose }: { ticket: Ticket; onClose: () => void }) {
+function TicketThread({ ticket, onClose, onResolve }: { ticket: Ticket; onClose: () => void; onResolve: (id: string) => void }) {
   const [reply, setReply] = useState("");
-  const [screenshot, setScreenshot] = useState<File | null>(null);
   const [screenshotPreview, setScreenshotPreview] = useState<string | null>(null);
   const [messages, setMessages] = useState<TicketMessage[]>(ticket.messages);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -129,7 +143,6 @@ function TicketThread({ ticket, onClose }: { ticket: Ticket; onClose: () => void
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setScreenshot(file);
     const reader = new FileReader();
     reader.onload = () => setScreenshotPreview(reader.result as string);
     reader.readAsDataURL(file);
@@ -147,7 +160,6 @@ function TicketThread({ ticket, onClose }: { ticket: Ticket; onClose: () => void
     };
     setMessages(m => [...m, newMsg]);
     setReply("");
-    setScreenshot(null);
     setScreenshotPreview(null);
   };
 
@@ -164,6 +176,11 @@ function TicketThread({ ticket, onClose }: { ticket: Ticket; onClose: () => void
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <TicketBadges ticket={ticket} />
+            {ticket.status !== "resolved" && (
+              <Button size="sm" variant="secondary" onClick={() => onResolve(ticket.id)}>
+                Mark Resolved
+              </Button>
+            )}
             <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 transition">
               <X className="w-4 h-4" />
             </button>
@@ -198,7 +215,7 @@ function TicketThread({ ticket, onClose }: { ticket: Ticket; onClose: () => void
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={screenshotPreview} alt="attach" className="w-full h-full object-cover" />
             <button
-              onClick={() => { setScreenshot(null); setScreenshotPreview(null); }}
+              onClick={() => setScreenshotPreview(null)}
               className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-black/60 text-white flex items-center justify-center"
             >
               <X className="w-2.5 h-2.5" />
@@ -240,26 +257,37 @@ function TicketThread({ ticket, onClose }: { ticket: Ticket; onClose: () => void
 
 export default function AdminTicketsPage() {
   const [tab, setTab] = useState("all");
+  const [tickets, setTickets] = useState<Ticket[]>(adminTickets);
   const [selected, setSelected] = useState<Ticket | null>(null);
 
   const tabs = [
-    { id: "all",         label: "All",         count: adminTickets.length },
-    { id: "open",        label: "Open",        count: adminTickets.filter(t => t.status === "open").length },
-    { id: "in_progress", label: "In Progress", count: adminTickets.filter(t => t.status === "in_progress").length },
-    { id: "resolved",    label: "Resolved",    count: adminTickets.filter(t => t.status === "resolved").length },
+    { id: "all",         label: "All",         count: tickets.length },
+    { id: "open",        label: "Open",        count: tickets.filter(t => t.status === "open").length },
+    { id: "in_progress", label: "In Progress", count: tickets.filter(t => t.status === "in_progress").length },
+    { id: "resolved",    label: "Resolved",    count: tickets.filter(t => t.status === "resolved").length },
   ];
 
-  const filtered = tab === "all" ? adminTickets : adminTickets.filter(t => t.status === tab);
+  const filtered = tab === "all" ? tickets : tickets.filter(t => t.status === tab);
+
+  const handleResolve = (id: string) => {
+    setTickets(ts => ts.map(t => t.id === id ? { ...t, status: "resolved" } : t));
+    setSelected(t => t?.id === id ? { ...t, status: "resolved" } : t);
+  };
 
   return (
-    <div className="flex h-full overflow-hidden">
+    <div className="flex h-full flex-col overflow-hidden">
+      <Topbar
+        title="Support Tickets"
+        subtitle={`${tickets.filter(t => t.status !== "resolved").length} tickets need attention.`}
+      />
+      <main className="flex min-h-0 flex-1 overflow-hidden">
       {/* Ticket list panel */}
       <div className={cn(
         "flex flex-col border-r border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 transition-all",
-        selected ? "w-72 shrink-0" : "flex-1"
+        selected ? "hidden md:flex md:w-72 md:shrink-0" : "flex-1"
       )}>
         <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
-          <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-3">Support Tickets</h1>
+          <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-3">Ticket queue</h2>
           <Tabs tabs={tabs} active={tab} onChange={setTab} />
         </div>
 
@@ -303,7 +331,7 @@ export default function AdminTicketsPage() {
       {/* Thread panel */}
       {selected ? (
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-          <TicketThread ticket={selected} onClose={() => setSelected(null)} />
+          <TicketThread key={selected.id} ticket={selected} onClose={() => setSelected(null)} onResolve={handleResolve} />
         </div>
       ) : (
         <div className="flex-1 hidden lg:flex items-center justify-center text-slate-400 bg-slate-50 dark:bg-slate-950">
@@ -315,6 +343,7 @@ export default function AdminTicketsPage() {
           </div>
         </div>
       )}
+      </main>
     </div>
   );
 }

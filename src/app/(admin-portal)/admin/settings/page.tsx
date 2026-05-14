@@ -26,7 +26,7 @@ export default function AdminSettingsPage() {
   return (
     <div className="flex flex-col h-full overflow-hidden">
       <Topbar title="Admin Settings" />
-      <main className="flex-1 overflow-y-auto p-6 space-y-6">
+      <main className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
         <Tabs tabs={tabs} active={tab} onChange={setTab} className="w-fit" />
 
         {tab === "general" && (

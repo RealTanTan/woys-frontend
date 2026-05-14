@@ -78,7 +78,7 @@ export default function OnboardingPage() {
           {step === 0 && (
             <div className="space-y-5">
               <div>
-                <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Welcome to WOYS 👋</h1>
+                <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Welcome to WOYS</h1>
                 <p className="text-slate-500 dark:text-slate-400 mt-1">Let's set up your account. It takes under 2 minutes.</p>
               </div>
               <Input
@@ -110,7 +110,7 @@ export default function OnboardingPage() {
                   </button>
                 ))}
               </div>
-              <div className="flex gap-3">
+              <div className="flex flex-col gap-3 sm:flex-row">
                 <Button variant="outline" onClick={() => setStep(0)}>← Back</Button>
                 <Button className="flex-1" disabled={!industry} onClick={() => setStep(2)}>Continue <ChevronRight className="w-4 h-4" /></Button>
               </div>
@@ -132,7 +132,7 @@ export default function OnboardingPage() {
                       onClick={() => setCountry(c)}
                       className={`p-3 rounded-xl border-2 text-sm font-medium transition-all ${country === c ? "border-brand-500 bg-brand-50 dark:bg-brand-950/30 text-brand-700 dark:text-brand-300" : "border-slate-100 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-slate-200 dark:hover:border-slate-700"}`}
                     >
-                      {c === "Canada" ? "🇨🇦 Canada" : "🇺🇸 United States"}
+                    {c}
                     </button>
                   ))}
                 </div>
@@ -148,7 +148,7 @@ export default function OnboardingPage() {
                   {timezones.map(tz => <option key={tz} value={tz}>{tz}</option>)}
                 </select>
               </div>
-              <div className="flex gap-3">
+              <div className="flex flex-col gap-3 sm:flex-row">
                 <Button variant="outline" onClick={() => setStep(1)}>← Back</Button>
                 <Button className="flex-1" disabled={!timezone} onClick={() => setStep(3)}>Continue <ChevronRight className="w-4 h-4" /></Button>
               </div>
@@ -158,7 +158,7 @@ export default function OnboardingPage() {
           {step === 3 && (
             <div className="space-y-5">
               <div>
-                <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">You're all set! 🎉</h1>
+                <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">You're all set</h1>
                 <p className="text-slate-500 dark:text-slate-400 mt-1">Here's what we've got. Confirm and launch your account.</p>
               </div>
               <div className="space-y-3 bg-slate-50 dark:bg-slate-800 rounded-2xl p-4">
@@ -175,12 +175,12 @@ export default function OnboardingPage() {
                 ))}
               </div>
               <div className="p-3 bg-brand-50 dark:bg-brand-950/30 border border-brand-100 dark:border-brand-900/40 rounded-xl text-xs text-brand-700 dark:text-brand-400">
-                ✓ Your AI assistant will start suggesting campaigns based on your industry and upcoming dates.
+                Your assistant will start suggesting campaigns based on your industry and upcoming dates.
               </div>
-              <div className="flex gap-3">
+              <div className="flex flex-col gap-3 sm:flex-row">
                 <Button variant="outline" onClick={() => setStep(2)}>← Back</Button>
                 <Button className="flex-1" loading={loading} onClick={handleFinish}>
-                  Launch My Account 🚀
+                  Launch My Account
                 </Button>
               </div>
             </div>

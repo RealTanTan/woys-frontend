@@ -13,19 +13,26 @@
  *   const [broadcast, setBroadcast] = useState(null);
  *   useEffect(() => { getBroadcast(id).then(setBroadcast); }, [id]);
  */
-import { use } from "react";
+import { use, useState } from "react";
 import { ArrowLeft, Radio, CheckCircle, XCircle, Clock, Users } from "lucide-react";
 import { Topbar } from "@/components/layout/Topbar";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { Modal } from "@/components/ui/Modal";
+import { Input } from "@/components/ui/Input";
+import { useToast } from "@/components/ui/Toast";
 import { broadcasts } from "@/lib/mock-data"; // ← REMOVE when backend ready
 import { formatDate } from "@/lib/utils";
 import Link from "next/link";
 
 export default function BroadcastDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const b = broadcasts.find(br => br.id === id);
+  const initial = broadcasts.find(br => br.id === id);
+  const [showToast, toastNode] = useToast();
+  const [b, setBroadcast] = useState(initial ?? null);
+  const [scheduleOpen, setScheduleOpen] = useState(false);
+  const [scheduledAt, setScheduledAt] = useState(initial?.scheduled_at?.slice(0, 16) ?? "");
 
   if (!b) {
     return (
@@ -41,6 +48,7 @@ export default function BroadcastDetailPage({ params }: { params: Promise<{ id: 
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
+      {toastNode}
       <Topbar
         title={b.name}
         subtitle="Broadcast Detail"
@@ -50,7 +58,7 @@ export default function BroadcastDetailPage({ params }: { params: Promise<{ id: 
           </Link>
         }
       />
-      <main className="flex-1 overflow-y-auto p-6 space-y-5">
+      <main className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5">
 
         {/* Status row */}
         <div className="flex items-center gap-3 flex-wrap">
@@ -127,21 +135,65 @@ export default function BroadcastDetailPage({ params }: { params: Promise<{ id: 
         )}
 
         {b.status === "scheduled" && (
-          <div className="flex gap-3">
-            <Button variant="outline"><Clock className="w-4 h-4" /> Edit Schedule</Button>
-            <Button variant="danger">Cancel Broadcast</Button>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <Button variant="outline" onClick={() => setScheduleOpen(true)}><Clock className="w-4 h-4" /> Edit Schedule</Button>
+            <Button
+              variant="danger"
+              onClick={() => {
+                setBroadcast(current => current ? { ...current, status: "cancelled" } : current);
+                showToast("Scheduled broadcast cancelled.");
+              }}
+            >
+              Cancel Broadcast
+            </Button>
           </div>
         )}
 
         {b.status === "draft" && (
-          <div className="flex gap-3">
-            <Link href={`/broadcasts/new`}>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <Link href={`/broadcasts/new?msg=${encodeURIComponent(b.message)}`}>
               <Button variant="secondary">Edit Draft</Button>
             </Link>
-            <Button>Send Now</Button>
+            <Button
+              onClick={() => {
+                setBroadcast(current => current ? {
+                  ...current,
+                  status: "sent",
+                  sent_at: new Date().toISOString(),
+                  total_recipients: 248,
+                  sent_count: 248,
+                  delivered_count: 242,
+                  failed_count: 6,
+                } : current);
+                showToast("Draft sent to 248 contacts.");
+              }}
+            >
+              Send Now
+            </Button>
           </div>
         )}
       </main>
+
+      <Modal open={scheduleOpen} onClose={() => setScheduleOpen(false)} title="Edit Schedule" size="sm">
+        <div className="space-y-4">
+          <Input type="datetime-local" label="Send date and time" value={scheduledAt} onChange={e => setScheduledAt(e.target.value)} />
+          <p className="text-xs text-slate-500 dark:text-slate-400">Demo mode updates the scheduled time locally.</p>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <Button variant="outline" className="flex-1" onClick={() => setScheduleOpen(false)}>Cancel</Button>
+            <Button
+              className="flex-1"
+              disabled={!scheduledAt}
+              onClick={() => {
+                setBroadcast(current => current ? { ...current, scheduled_at: new Date(scheduledAt).toISOString() } : current);
+                setScheduleOpen(false);
+                showToast("Schedule updated.");
+              }}
+            >
+              Save
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

@@ -28,15 +28,15 @@ export function Sidebar() {
   };
 
   return (
-    <aside className="flex flex-col w-64 shrink-0 h-screen bg-white dark:bg-slate-900 border-r border-slate-100 dark:border-slate-800">
+    <aside className="hidden md:flex flex-col w-68 shrink-0 h-screen bg-slate-950 text-white border-r border-white/10">
       {/* Logo */}
-      <div className="flex items-center gap-3 px-5 py-5 border-b border-slate-100 dark:border-slate-800">
-        <div className="w-8 h-8 bg-brand-600 rounded-lg flex items-center justify-center">
-          <Zap className="w-4 h-4 text-white" />
+      <div className="flex items-center gap-3 px-5 py-5 border-b border-white/10">
+        <div className="w-9 h-9 bg-brand-400 rounded-xl flex items-center justify-center shadow-lg shadow-brand-950/40">
+          <Zap className="w-4 h-4 text-slate-950" />
         </div>
         <div>
-          <p className="font-bold text-slate-900 dark:text-white text-lg leading-none">WOYS</p>
-          <p className="text-xs text-slate-400 leading-none mt-0.5">SMS Platform</p>
+          <p className="font-bold text-white text-lg leading-none">WOYS</p>
+          <p className="text-xs text-slate-400 leading-none mt-0.5">Revenue SMS</p>
         </div>
       </div>
 
@@ -51,8 +51,8 @@ export function Sidebar() {
               className={cn(
                 "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all",
                 active
-                  ? "bg-brand-50 dark:bg-brand-950/50 text-brand-600 dark:text-brand-400"
-                  : "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200"
+                  ? "bg-brand-400 text-slate-950 shadow-lg shadow-brand-950/30"
+                  : "text-slate-400 hover:bg-white/10 hover:text-white"
               )}
             >
               <Icon className="w-4 h-4 shrink-0" />
@@ -63,10 +63,15 @@ export function Sidebar() {
       </nav>
 
       {/* Footer */}
-      <div className="p-3 border-t border-slate-100 dark:border-slate-800">
+      <div className="mx-3 mb-3 rounded-2xl border border-white/10 bg-white/[0.04] p-3">
+        <p className="text-xs font-semibold text-slate-300">Demo workspace</p>
+        <p className="mt-1 text-xs text-slate-500">Mock data mode. API-ready surfaces stay interactive.</p>
+      </div>
+
+      <div className="p-3 border-t border-white/10">
         <button
           onClick={handleLogout}
-          className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium text-slate-500 dark:text-slate-400 hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-600 dark:hover:text-red-400 transition-all"
+          className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:bg-red-950/40 hover:text-red-300 transition-all"
         >
           <LogOut className="w-4 h-4" />
           Log out

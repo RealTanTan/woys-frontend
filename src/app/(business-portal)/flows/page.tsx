@@ -10,7 +10,7 @@
  *   delete → DELETE /api/flows/:id        (deleteFlow in api.ts)
  */
 import { useState } from "react";
-import { Plus, Zap, Users, Calendar, ChevronDown, ChevronUp, ToggleLeft, ToggleRight, Clock, MessageSquare, BarChart2, Trash2, Edit2, X, Check } from "lucide-react";
+import { Plus, Zap, Users, Calendar, ChevronDown, ChevronUp, ToggleLeft, ToggleRight, Clock, MessageSquare, BarChart2, Trash2, Edit2 } from "lucide-react";
 import { Topbar } from "@/components/layout/Topbar";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
@@ -20,7 +20,6 @@ import { Input } from "@/components/ui/Input";
 import { useToast } from "@/components/ui/Toast";
 import { flows as mockFlows } from "@/lib/mock-data";
 import type { Flow } from "@/types";
-import { cn } from "@/lib/utils";
 
 const triggerLabels: Record<string, string> = {
   contact_joins: "Contact Joins",
@@ -139,7 +138,7 @@ export default function FlowsPage() {
           </Button>
         }
       />
-      <main className="flex-1 overflow-y-auto p-6 space-y-6">
+      <main className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
 
         {/* Quick-start templates */}
         <div>
@@ -219,7 +218,7 @@ export default function FlowsPage() {
                         </div>
                       ))}
                     </div>
-                    <div className="flex gap-2 mt-3">
+                    <div className="flex flex-col gap-2 mt-3 sm:flex-row">
                       <Button variant="outline" size="sm" onClick={() => { setEditTarget(flow); setEditName(flow.name); }}>
                         <Edit2 className="w-3.5 h-3.5" /> Rename
                       </Button>
@@ -247,7 +246,7 @@ export default function FlowsPage() {
           <p className="text-sm text-slate-600 dark:text-slate-400">
             Delete <strong>{deleteTarget?.name}</strong>? This cannot be undone.
           </p>
-          <div className="flex gap-3">
+          <div className="flex flex-col gap-3 sm:flex-row">
             <Button variant="outline" className="flex-1" onClick={() => setDeleteTarget(null)}>Cancel</Button>
             <Button variant="danger" className="flex-1" loading={deleteLoading} onClick={handleDelete}>Delete Flow</Button>
           </div>
@@ -258,7 +257,7 @@ export default function FlowsPage() {
       <Modal open={!!editTarget} onClose={() => setEditTarget(null)} title="Rename Flow" size="sm">
         <div className="space-y-4">
           <Input label="Flow Name" value={editName} onChange={e => setEditName(e.target.value)} />
-          <div className="flex gap-3">
+          <div className="flex flex-col gap-3 sm:flex-row">
             <Button variant="outline" className="flex-1" onClick={() => setEditTarget(null)}>Cancel</Button>
             <Button className="flex-1" loading={editLoading} disabled={!editName.trim()} onClick={handleEdit}>Save</Button>
           </div>
