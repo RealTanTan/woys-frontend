@@ -159,11 +159,32 @@ export default function ContactsPage() {
   const handleSendConsent = async () => {
     if (!consentContact) return;
     setConsentLoading(true);
-    await new Promise(r => setTimeout(r, 800));
-    setConsentLoading(false);
     const name = consentContact.name;
+    const id   = consentContact.id;
+    // Simulate sending delay
+    await new Promise(r => setTimeout(r, 900));
     setConsentContact(null);
-    showToast(`Consent request sent to ${name}.`);
+    setConsentLoading(false);
+    showToast(`Consent request sent to ${name}. Waiting for reply…`);
+    // Simulate customer reply after 2–4 seconds (random accept/decline)
+    const delay = 2000 + Math.random() * 2000;
+    const accepted = Math.random() > 0.35; // 65% accept rate
+    setTimeout(() => {
+      const today = new Date().toISOString().slice(0, 10);
+      setContacts(cs => cs.map(c =>
+        c.id === id
+          ? accepted
+            ? { ...c, consent_status: "given",     consent_given_at: today, opted_out_at: undefined }
+            : { ...c, consent_status: "opted_out",  opted_out_at: today,    consent_given_at: undefined }
+          : c
+      ));
+      showToast(
+        accepted
+          ? `✓ ${name} replied YES — consent granted!`
+          : `${name} declined — opted out.`,
+        accepted ? "success" : "error"
+      );
+    }, delay);
   };
 
   const openEdit = (c: Contact) => {
