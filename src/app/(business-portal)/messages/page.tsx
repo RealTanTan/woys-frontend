@@ -16,23 +16,19 @@ import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { Textarea } from "@/components/ui/Input";
 import { useToast } from "@/components/ui/Toast";
-import { conversations } from "@/lib/mock-data";
-import { isDemoSession } from "@/lib/auth";
+import { useDemoStore } from "@/lib/demo-store";
 import { formatRelative } from "@/lib/utils";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 export default function MessagesPage() {
   const [showToast, toastNode] = useToast();
+  const { conversations: convList } = useDemoStore();
   const [search, setSearch] = useState("");
   const [newMsgOpen, setNewMsgOpen] = useState(false);
   const [newMsg, setNewMsg] = useState({ phone: "", body: "" });
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
-
-  const [convList] = useState(() =>
-    typeof window !== "undefined" && isDemoSession() ? [] : conversations
-  );
 
   const filtered = convList.filter(c =>
     c.contact.name.toLowerCase().includes(search.toLowerCase()) ||

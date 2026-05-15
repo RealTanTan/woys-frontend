@@ -12,7 +12,7 @@
  *   invite → POST /api/team/invite  (inviteTeamMember in api.ts)
  *   remove → DELETE /api/team/:id  (removeTeamMember in api.ts)
  */
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Save, Phone, Shield, CreditCard, Plus, Trash2, Lock } from "lucide-react";
 import { Topbar } from "@/components/layout/Topbar";
 import { Card } from "@/components/ui/Card";
@@ -22,8 +22,8 @@ import { Badge } from "@/components/ui/Badge";
 import { Tabs } from "@/components/ui/Tabs";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
-import { currentOrg, teamMembers as initialTeam } from "@/lib/mock-data";
-import { isDemoSession } from "@/lib/auth";
+import { currentOrg } from "@/lib/mock-data";
+import { useDemoStore } from "@/lib/demo-store";
 import { planLabel } from "@/lib/utils";
 import type { TeamMember } from "@/types";
 
@@ -41,6 +41,7 @@ const roleColors: Record<string, "purple" | "blue" | "gray"> = {
 export default function SettingsPage() {
   const [showToast, toastNode] = useToast();
   const [tab, setTab] = useState("general");
+  const { team, setTeam, orgName, orgEmail, orgSlug, smsNumber, isDemo, messagesUsed, messagesLimit } = useDemoStore();
 
   // SMS & CASL
   const [stopMessage, setStopMessage] = useState("You have been unsubscribed from Billiard Bar & Club messages. Reply START to re-subscribe.");
@@ -48,10 +49,13 @@ export default function SettingsPage() {
   const [infoMessage, setInfoMessage] = useState("Billiard Bar & Club SMS Marketing. Msg frequency varies. Msg & data rates may apply. Reply STOP to cancel, HELP for help.");
   const [saving, setSaving] = useState(false);
 
-  // Team
-  const [team, setTeam] = useState<TeamMember[]>(() =>
-    typeof window !== "undefined" && isDemoSession() ? [] : initialTeam
-  );
+  useEffect(() => {
+    if (isDemo) {
+      setStopMessage(`You have been unsubscribed from ${orgName} messages. Reply START to re-subscribe.`);
+      setHelpMessage(`For help with ${orgName} messages, contact us. Reply STOP to unsubscribe.`);
+      setInfoMessage(`${orgName} SMS Marketing. Msg & data rates may apply. Reply STOP to cancel, HELP for help.`);
+    }
+  }, [isDemo, orgName]);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [inviteForm, setInviteForm] = useState({ name: "", email: "", role: "agent" });
   const [inviteLoading, setInviteLoading] = useState(false);
@@ -63,7 +67,7 @@ export default function SettingsPage() {
   const [cancelLoading, setCancelLoading] = useState(false);
   const [upgradeLoading, setUpgradeLoading] = useState<string | null>(null);
 
-  const usagePct = Math.round((currentOrg.messages_used / currentOrg.messages_limit) * 100);
+  const usagePct = Math.round((messagesUsed / messagesLimit) * 100);
 
   const handleSave = async () => {
     setSaving(true);
@@ -137,9 +141,9 @@ export default function SettingsPage() {
               <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-4">Business Profile</p>
               <div className="space-y-4">
                 {[
-                  { label: "Business Name",       value: currentOrg.name,          mono: false },
-                  { label: "Slug / URL Identifier", value: currentOrg.slug,        mono: true  },
-                  { label: "Business Email",       value: "hello@billiardbar.ca",   mono: false },
+                  { label: "Business Name",         value: orgName,    mono: false },
+                  { label: "Slug / URL Identifier", value: orgSlug,    mono: true  },
+                  { label: "Business Email",        value: orgEmail,   mono: false },
                 ].map(f => (
                   <div key={f.label} className="flex flex-col gap-1">
                     <label className="text-sm font-medium text-slate-500 dark:text-slate-500 flex items-center gap-1.5">
@@ -200,7 +204,7 @@ export default function SettingsPage() {
                 <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">SMS Number</p>
               </div>
               <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800 rounded-xl">
-                <p className="text-sm font-mono font-medium text-slate-900 dark:text-slate-100">{currentOrg.sms_number}</p>
+                <p className="text-sm font-mono font-medium text-slate-900 dark:text-slate-100">{smsNumber}</p>
                 <Badge color="green">Active</Badge>
               </div>
               <p className="text-xs text-slate-400 mt-2">Your dedicated Canadian long-code number via Twilio.</p>
@@ -256,7 +260,7 @@ export default function SettingsPage() {
                 <div className="h-2 rounded-full bg-white" style={{ width: `${usagePct}%` }} />
               </div>
               <p className="text-brand-200 text-xs mt-2">
-                {currentOrg.messages_used.toLocaleString()} / {currentOrg.messages_limit.toLocaleString()} SMS used this month
+                {messagesUsed.toLocaleString()} / {messagesLimit.toLocaleString()} SMS used this month
               </p>
             </Card>
 

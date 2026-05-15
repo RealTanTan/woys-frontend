@@ -22,8 +22,7 @@ import { Tabs } from "@/components/ui/Tabs";
 import { Modal } from "@/components/ui/Modal";
 import { Input, Textarea } from "@/components/ui/Input";
 import { useToast } from "@/components/ui/Toast";
-import { broadcasts, templates as initialTemplates } from "@/lib/mock-data";
-import { isDemoSession } from "@/lib/auth";
+import { useDemoStore } from "@/lib/demo-store";
 import { formatDate, smsCharCount } from "@/lib/utils";
 import Link from "next/link";
 import type { Broadcast, Template } from "@/types";
@@ -104,9 +103,7 @@ function BroadcastCard({ b }: { b: Broadcast }) {
 
 function CampaignsView() {
   const [tab, setTab] = useState("all");
-  const [broadcastList, setBroadcastList] = useState<Broadcast[]>(() =>
-    typeof window !== "undefined" && isDemoSession() ? [] : broadcasts
-  );
+  const { broadcasts: broadcastList, setBroadcasts: setBroadcastList, contacts } = useDemoStore();
 
   const tabs = [
     { id: "all",       label: "All",       count: broadcastList.length },
@@ -118,10 +115,10 @@ function CampaignsView() {
   const filtered = tab === "all" ? broadcastList : broadcastList.filter(b => b.status === tab);
 
   const channels = [
-    { id: "vip",           label: "VIP Customers", icon: <Star className="w-5 h-5" />,       color: "purple", count: 45,  sent: 3 },
-    { id: "new_customers", label: "New Customers",  icon: <Users className="w-5 h-5" />,      color: "green",  count: 22,  sent: 1 },
-    { id: "winback",       label: "Win-back",       icon: <RotateCcw className="w-5 h-5" />,  color: "orange", count: 68,  sent: 1 },
-    { id: "all",           label: "All Contacts",   icon: <Radio className="w-5 h-5" />,      color: "blue",   count: 248, sent: 2 },
+    { id: "vip",           label: "VIP Customers", icon: <Star className="w-5 h-5" />,       color: "purple", count: contacts.filter(c => c.tags.includes("vip")).length,     sent: broadcastList.filter(b => b.audience_type === "vip").length },
+    { id: "new_customers", label: "New Customers",  icon: <Users className="w-5 h-5" />,      color: "green",  count: contacts.filter(c => c.tags.includes("new")).length,     sent: broadcastList.filter(b => b.audience_type === "new_customers").length },
+    { id: "winback",       label: "Win-back",       icon: <RotateCcw className="w-5 h-5" />,  color: "orange", count: contacts.filter(c => c.tags.includes("winback")).length, sent: broadcastList.filter(b => b.audience_type === "winback").length },
+    { id: "all",           label: "All Contacts",   icon: <Radio className="w-5 h-5" />,      color: "blue",   count: contacts.length,                                         sent: broadcastList.filter(b => b.audience_type === "all").length },
   ];
 
   const colorMap: Record<string, string> = {
@@ -177,9 +174,7 @@ function CampaignsView() {
 
 function TemplatesView() {
   const [showToast, toastNode] = useToast();
-  const [templates, setTemplates] = useState<Template[]>(() =>
-    typeof window !== "undefined" && isDemoSession() ? [] : initialTemplates
-  );
+  const { templates, setTemplates } = useDemoStore();
   const [modalOpen, setModalOpen] = useState(false);
   const [editTemplate, setEditTemplate] = useState<Template | null>(null);
   const [form, setForm] = useState({ name: "", body: "" });
