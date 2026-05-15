@@ -60,25 +60,29 @@ type MockUser = {
 
 let memoryUser: MockUser | null = null;
 
-function storageAvailable(): boolean {
+function storageAvailable(type: "localStorage" | "sessionStorage" = "localStorage"): boolean {
   if (typeof window === "undefined") return false;
   try {
     const key = "__woys_storage_test__";
-    window.localStorage.setItem(key, "1");
-    window.localStorage.removeItem(key);
+    window[type].setItem(key, "1");
+    window[type].removeItem(key);
     return true;
   } catch {
     return false;
   }
 }
 
-function saveUser(user: MockUser) {
+function saveUser(user: MockUser, session = false) {
   memoryUser = user;
-  if (!storageAvailable()) return;
+  if (typeof window === "undefined") return;
   try {
-    window.localStorage.setItem("woys_user", JSON.stringify(user));
+    if (session && storageAvailable("sessionStorage")) {
+      window.sessionStorage.setItem("woys_user", JSON.stringify(user));
+    } else if (!session && storageAvailable("localStorage")) {
+      window.localStorage.setItem("woys_user", JSON.stringify(user));
+    }
   } catch {
-    // Keep the in-memory demo session so login still works on restrictive browsers.
+    // Keep in-memory fallback.
   }
 }
 
@@ -99,16 +103,26 @@ export function mockLogin(email: string, password: string, role: "business" | "a
 }
 
 /**
+ * DEMO — creates a tab-scoped session (sessionStorage) for beta showcase.
+ * Session is destroyed when the browser tab is closed.
+ * No password needed — just a name and business name.
+ */
+export function mockDemoLogin(name: string, businessName: string, email: string): void {
+  saveUser({ role: "owner", name: name.trim(), email: email.trim(), org: businessName.trim() }, true);
+}
+
+/**
  * MOCK ONLY — clears localStorage session.
  * Replace with Clerk's useClerk().signOut().
  */
 export function mockLogout() {
   memoryUser = null;
-  if (!storageAvailable()) return;
+  if (typeof window === "undefined") return;
   try {
-    window.localStorage.removeItem("woys_user");
+    if (storageAvailable("localStorage")) window.localStorage.removeItem("woys_user");
+    if (storageAvailable("sessionStorage")) window.sessionStorage.removeItem("woys_user");
   } catch {
-    // No-op: logout should not crash the demo if browser storage is blocked.
+    // No-op.
   }
 }
 
@@ -119,13 +133,30 @@ export function mockLogout() {
  *
  * Returns null on server (typeof window === "undefined" guard).
  */
-export function getUser() {
+export function getUser(): MockUser | null {
   if (typeof window === "undefined") return null;
-  if (!storageAvailable()) return memoryUser;
   try {
-    const raw = window.localStorage.getItem("woys_user");
-    return raw ? JSON.parse(raw) : memoryUser;
+    // sessionStorage takes priority (demo/tab-scoped users)
+    if (storageAvailable("sessionStorage")) {
+      const session = window.sessionStorage.getItem("woys_user");
+      if (session) return JSON.parse(session) as MockUser;
+    }
+    if (storageAvailable("localStorage")) {
+      const local = window.localStorage.getItem("woys_user");
+      if (local) return JSON.parse(local) as MockUser;
+    }
   } catch {
-    return memoryUser;
+    // fall through
+  }
+  return memoryUser;
+}
+
+/** True when current session was created via mockDemoLogin (sessionStorage only). */
+export function isDemoSession(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return storageAvailable("sessionStorage") && !!window.sessionStorage.getItem("woys_user");
+  } catch {
+    return false;
   }
 }

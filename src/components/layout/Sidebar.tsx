@@ -6,8 +6,9 @@ import {
   Settings, LogOut, Zap, GitBranch,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { mockLogout } from "@/lib/auth";
+import { mockLogout, getUser, isDemoSession } from "@/lib/auth";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 const nav = [
   { href: "/dashboard",  label: "Dashboard",  icon: LayoutDashboard },
@@ -21,6 +22,18 @@ const nav = [
 export function Sidebar() {
   const path = usePathname();
   const router = useRouter();
+  const [userName, setUserName] = useState("Demo User");
+  const [userOrg, setUserOrg] = useState("Demo workspace");
+  const [isDemo, setIsDemo] = useState(false);
+
+  useEffect(() => {
+    const u = getUser();
+    if (u) {
+      setUserName(u.name);
+      setUserOrg(u.org ?? "My Business");
+    }
+    setIsDemo(isDemoSession());
+  }, []);
 
   const handleLogout = () => {
     mockLogout();
@@ -64,8 +77,11 @@ export function Sidebar() {
 
       {/* Footer */}
       <div className="mx-3 mb-3 rounded-2xl border border-white/10 bg-white/[0.04] p-3">
-        <p className="text-xs font-semibold text-slate-300">Demo workspace</p>
-        <p className="mt-1 text-xs text-slate-500">Mock data mode. API-ready surfaces stay interactive.</p>
+        <p className="text-xs font-semibold text-slate-300 truncate">{userOrg}</p>
+        <p className="mt-0.5 text-xs text-slate-500 truncate">{userName}</p>
+        {isDemo && (
+          <p className="mt-1 text-xs text-brand-400">✦ Demo session</p>
+        )}
       </div>
 
       <div className="p-3 border-t border-white/10">
