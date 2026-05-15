@@ -23,6 +23,7 @@ import { Modal } from "@/components/ui/Modal";
 import { Input, Textarea } from "@/components/ui/Input";
 import { useToast } from "@/components/ui/Toast";
 import { broadcasts, templates as initialTemplates } from "@/lib/mock-data";
+import { isDemoSession } from "@/lib/auth";
 import { formatDate, smsCharCount } from "@/lib/utils";
 import Link from "next/link";
 import type { Broadcast, Template } from "@/types";
@@ -103,15 +104,18 @@ function BroadcastCard({ b }: { b: Broadcast }) {
 
 function CampaignsView() {
   const [tab, setTab] = useState("all");
+  const [broadcastList, setBroadcastList] = useState<Broadcast[]>(() =>
+    typeof window !== "undefined" && isDemoSession() ? [] : broadcasts
+  );
 
   const tabs = [
-    { id: "all",       label: "All",       count: broadcasts.length },
-    { id: "sent",      label: "Sent",      count: broadcasts.filter(b => b.status === "sent").length },
-    { id: "scheduled", label: "Scheduled", count: broadcasts.filter(b => b.status === "scheduled").length },
-    { id: "draft",     label: "Drafts",    count: broadcasts.filter(b => b.status === "draft").length },
+    { id: "all",       label: "All",       count: broadcastList.length },
+    { id: "sent",      label: "Sent",      count: broadcastList.filter(b => b.status === "sent").length },
+    { id: "scheduled", label: "Scheduled", count: broadcastList.filter(b => b.status === "scheduled").length },
+    { id: "draft",     label: "Drafts",    count: broadcastList.filter(b => b.status === "draft").length },
   ];
 
-  const filtered = tab === "all" ? broadcasts : broadcasts.filter(b => b.status === tab);
+  const filtered = tab === "all" ? broadcastList : broadcastList.filter(b => b.status === tab);
 
   const channels = [
     { id: "vip",           label: "VIP Customers", icon: <Star className="w-5 h-5" />,       color: "purple", count: 45,  sent: 3 },
@@ -173,7 +177,9 @@ function CampaignsView() {
 
 function TemplatesView() {
   const [showToast, toastNode] = useToast();
-  const [templates, setTemplates] = useState<Template[]>(initialTemplates);
+  const [templates, setTemplates] = useState<Template[]>(() =>
+    typeof window !== "undefined" && isDemoSession() ? [] : initialTemplates
+  );
   const [modalOpen, setModalOpen] = useState(false);
   const [editTemplate, setEditTemplate] = useState<Template | null>(null);
   const [form, setForm] = useState({ name: "", body: "" });

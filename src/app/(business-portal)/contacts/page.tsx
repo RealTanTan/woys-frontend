@@ -18,6 +18,7 @@ import { Tabs } from "@/components/ui/Tabs";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import { contacts as initialContacts } from "@/lib/mock-data";
+import { isDemoSession } from "@/lib/auth";
 import { formatDate } from "@/lib/utils";
 import type { Contact, ContactTag, ConsentStatus } from "@/types";
 
@@ -101,7 +102,9 @@ function ContactRow({ contact, onEdit, onConsent }: { contact: Contact; onEdit: 
 
 export default function ContactsPage() {
   const [showToast, toastNode] = useToast();
-  const [contacts, setContacts] = useState<Contact[]>(initialContacts);
+  const [contacts, setContacts] = useState<Contact[]>(() =>
+    typeof window !== "undefined" && isDemoSession() ? [] : initialContacts
+  );
   const [tab, setTab] = useState("all");
   const [search, setSearch] = useState("");
   const [addOpen, setAddOpen] = useState(false);

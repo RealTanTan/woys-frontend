@@ -17,6 +17,7 @@ import { Modal } from "@/components/ui/Modal";
 import { Textarea } from "@/components/ui/Input";
 import { useToast } from "@/components/ui/Toast";
 import { conversations } from "@/lib/mock-data";
+import { isDemoSession } from "@/lib/auth";
 import { formatRelative } from "@/lib/utils";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -29,7 +30,11 @@ export default function MessagesPage() {
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
 
-  const filtered = conversations.filter(c =>
+  const [convList] = useState(() =>
+    typeof window !== "undefined" && isDemoSession() ? [] : conversations
+  );
+
+  const filtered = convList.filter(c =>
     c.contact.name.toLowerCase().includes(search.toLowerCase()) ||
     c.contact.phone.includes(search)
   );

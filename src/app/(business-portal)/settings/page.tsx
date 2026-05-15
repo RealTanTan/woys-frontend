@@ -23,6 +23,7 @@ import { Tabs } from "@/components/ui/Tabs";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import { currentOrg, teamMembers as initialTeam } from "@/lib/mock-data";
+import { isDemoSession } from "@/lib/auth";
 import { planLabel } from "@/lib/utils";
 import type { TeamMember } from "@/types";
 
@@ -48,7 +49,9 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
 
   // Team
-  const [team, setTeam] = useState<TeamMember[]>(initialTeam);
+  const [team, setTeam] = useState<TeamMember[]>(() =>
+    typeof window !== "undefined" && isDemoSession() ? [] : initialTeam
+  );
   const [inviteOpen, setInviteOpen] = useState(false);
   const [inviteForm, setInviteForm] = useState({ name: "", email: "", role: "agent" });
   const [inviteLoading, setInviteLoading] = useState(false);

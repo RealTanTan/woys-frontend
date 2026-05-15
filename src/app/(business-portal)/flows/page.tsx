@@ -19,6 +19,7 @@ import { Modal } from "@/components/ui/Modal";
 import { Input } from "@/components/ui/Input";
 import { useToast } from "@/components/ui/Toast";
 import { flows as mockFlows } from "@/lib/mock-data";
+import { isDemoSession } from "@/lib/auth";
 import type { Flow } from "@/types";
 
 const triggerLabels: Record<string, string> = {
@@ -77,7 +78,9 @@ const TEMPLATES = [
 
 export default function FlowsPage() {
   const [showToast, toastNode] = useToast();
-  const [flowList, setFlowList] = useState<Flow[]>(mockFlows);
+  const [flowList, setFlowList] = useState<Flow[]>(() =>
+    typeof window !== "undefined" && isDemoSession() ? [] : mockFlows
+  );
   const [expanded, setExpanded] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Flow | null>(null);
   const [editTarget, setEditTarget] = useState<Flow | null>(null);

@@ -18,13 +18,14 @@
  *        Dismiss calls DELETE /api/ai/suggestions/:id — backend logs for feedback loop.
  * AN-02: List growth chart — GET /api/analytics/growth?period=weekly
  */
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { MessageSquare, Users, Radio, TrendingUp, Sparkles, Check, Pencil, X } from "lucide-react";
 import { Topbar } from "@/components/layout/Topbar";
 import { Card, StatCard } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { currentOrg, broadcasts, conversations, getAiSuggestions } from "@/lib/mock-data"; // ← REMOVE when backend ready
+import { getUser, isDemoSession } from "@/lib/auth";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { AiPromoSuggestion } from "@/types";
@@ -71,12 +72,34 @@ function GrowthChart() {
 
 export default function DashboardPage() {
   const router = useRouter();
-  const usagePct = Math.round((currentOrg.messages_used / currentOrg.messages_limit) * 100);
-  const recentBroadcasts = broadcasts.filter(b => b.status === "sent").slice(0, 3);
-  const recentConvs = conversations.filter(c => c.unread_count > 0).slice(0, 4);
 
+  const [orgName, setOrgName] = useState(currentOrg.name);
+  const [usageUsed, setUsageUsed] = useState(currentOrg.messages_used);
+  const [usageLimit, setUsageLimit] = useState(currentOrg.messages_limit);
+  const [contactsCount, setContactsCount] = useState(currentOrg.contacts_count);
+  const [recentBroadcasts, setRecentBroadcasts] = useState(
+    broadcasts.filter(b => b.status === "sent").slice(0, 3)
+  );
+  const [recentConvs, setRecentConvs] = useState(
+    conversations.filter(c => c.unread_count > 0).slice(0, 4)
+  );
   const [suggestions, setSuggestions] = useState<AiPromoSuggestion[]>(getAiSuggestions());
   const [approvedIdx, setApprovedIdx] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (isDemoSession()) {
+      const u = getUser();
+      setOrgName(u?.org ?? "My Business");
+      setUsageUsed(0);
+      setUsageLimit(5000);
+      setContactsCount(0);
+      setRecentBroadcasts([]);
+      setRecentConvs([]);
+      setSuggestions([]);
+    }
+  }, []);
+
+  const usagePct = Math.round((usageUsed / usageLimit) * 100);
 
   const handleApprove = (s: AiPromoSuggestion, idx: number) => {
     // TODO: createBroadcast({ name: s.title, message: s.body, audience_type: "all", scheduled_at: null }) from api.ts
@@ -99,7 +122,7 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      <Topbar title="Today" subtitle={`${currentOrg.name} is open for customer replies and campaigns.`} />
+      <Topbar title="Today" subtitle={`${orgName} is open for customer replies and campaigns.`} />
       <main className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 animate-fade-up">
 
         <section className="grid grid-cols-1 gap-4 lg:grid-cols-[1.4fr_0.8fr]">
@@ -128,19 +151,19 @@ export default function DashboardPage() {
             <div>
               <p className="text-sm font-medium text-slate-500 dark:text-slate-400">SMS this month</p>
               <p className="mt-1 text-2xl font-semibold text-slate-950 dark:text-white">
-                {currentOrg.messages_used.toLocaleString()}
-                <span className="text-base font-normal text-slate-500"> / {currentOrg.messages_limit.toLocaleString()}</span>
+                {usageUsed.toLocaleString()}
+                <span className="text-base font-normal text-slate-500"> / {usageLimit.toLocaleString()}</span>
               </p>
             </div>
             <div className="mt-4 h-2 rounded-full bg-slate-100 dark:bg-slate-800">
               <div className="h-2 rounded-full bg-slate-950 dark:bg-white" style={{ width: `${usagePct}%` }} />
             </div>
-            <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">{(currentOrg.messages_limit - currentOrg.messages_used).toLocaleString()} messages left. Resets June 1.</p>
+            <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">{(usageLimit - usageUsed).toLocaleString()} messages left. Resets June 1.</p>
           </Card>
         </section>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <StatCard label="Customers" value={currentOrg.contacts_count} sub="+27 this week" icon={<Users className="w-5 h-5" />} color="brand" />
+          <StatCard label="Customers" value={contactsCount} sub="+27 this week" icon={<Users className="w-5 h-5" />} color="brand" />
           <StatCard label="Delivery Rate" value="97.2%" sub="healthy" icon={<TrendingUp className="w-5 h-5" />} color="green" />
           <StatCard label="Unread Replies" value={recentConvs.reduce((sum, c) => sum + c.unread_count, 0)} sub="needs attention" icon={<MessageSquare className="w-5 h-5" />} color="orange" />
         </div>
