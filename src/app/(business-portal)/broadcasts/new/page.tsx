@@ -21,13 +21,8 @@ import { getAiSuggestions } from "@/lib/mock-data";
 import { smsCharCount } from "@/lib/utils";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-
-const audiences = [
-  { id: "vip",           label: "VIP Customers",  desc: "Your best and most loyal customers", icon: <Star className="w-5 h-5" />, count: 45,  color: "purple" },
-  { id: "new_customers", label: "New Customers",   desc: "Joined in the last 30 days",          icon: <Users className="w-5 h-5" />, count: 22,  color: "green" },
-  { id: "winback",       label: "Win-back",        desc: "No visit in 60+ days",                icon: <RotateCcw className="w-5 h-5" />, count: 68, color: "orange" },
-  { id: "all",           label: "All Contacts",    desc: "Everyone with active consent",        icon: <Radio className="w-5 h-5" />, count: 248, color: "blue" },
-];
+import { useDemoStore } from "@/lib/demo-store";
+import type { Broadcast } from "@/types";
 
 const audienceColors: Record<string, string> = {
   purple: "border-violet-300 dark:border-violet-700 bg-violet-50 dark:bg-violet-950/30",
@@ -39,6 +34,15 @@ const audienceColors: Record<string, string> = {
 export default function NewBroadcastPage() {
   const router = useRouter();
   const [showToast, toastNode] = useToast();
+  const { contacts, broadcasts, setBroadcasts } = useDemoStore();
+
+  // Derive audience counts from live store
+  const audiences = [
+    { id: "vip",           label: "VIP Customers",  desc: "Your best and most loyal customers", icon: <Star className="w-5 h-5" />, count: contacts.filter(c => c.tags.includes("vip")).length,     color: "purple" },
+    { id: "new_customers", label: "New Customers",   desc: "Joined in the last 30 days",         icon: <Users className="w-5 h-5" />, count: contacts.filter(c => c.tags.includes("new")).length,     color: "green" },
+    { id: "winback",       label: "Win-back",        desc: "No visit in 60+ days",               icon: <RotateCcw className="w-5 h-5" />, count: contacts.filter(c => c.tags.includes("winback")).length, color: "orange" },
+    { id: "all",           label: "All Contacts",    desc: "Everyone with active consent",       icon: <Radio className="w-5 h-5" />, count: contacts.filter(c => c.consent_status === "given").length, color: "blue" },
+  ];
   const [prefilled, setPrefilled] = useState(false);
   const [step, setStep] = useState(1);
   const [name, setName] = useState("");
@@ -100,16 +104,42 @@ export default function NewBroadcastPage() {
 
   const handleSend = async () => {
     setSending(true);
-    // TODO: await createBroadcast({ name, message, audience_type: audience, scheduled_at: scheduleType === "later" ? scheduledAt : null });
     await new Promise(r => setTimeout(r, 1200));
+    const newB: Broadcast = {
+      id: `b${Date.now()}`,
+      name,
+      message,
+      audience_type: audience as Broadcast["audience_type"],
+      status: scheduleType === "now" ? "sent" : "scheduled",
+      scheduled_at: scheduleType === "later" ? scheduledAt : undefined,
+      total_recipients: selectedAudience?.count ?? 0,
+      sent_count: scheduleType === "now" ? (selectedAudience?.count ?? 0) : 0,
+      delivered_count: scheduleType === "now" ? Math.round((selectedAudience?.count ?? 0) * 0.97) : 0,
+      failed_count: 0,
+      created_at: new Date().toISOString().slice(0, 10),
+    };
+    setBroadcasts(prev => [newB, ...prev]);
     setSending(false);
-    showToast(scheduleType === "now" ? `Broadcast "${name}" sent to ${selectedAudience?.count} contacts!` : `Broadcast "${name}" scheduled successfully!`);
+    showToast(scheduleType === "now" ? `"${name}" sent to ${selectedAudience?.count} contacts!` : `"${name}" scheduled!`);
     setTimeout(() => router.push("/broadcasts"), 1500);
   };
 
   const handleSaveDraft = async () => {
     setSavingDraft(true);
     await new Promise(r => setTimeout(r, 800));
+    const draft: Broadcast = {
+      id: `b${Date.now()}`,
+      name,
+      message,
+      audience_type: (audience || "all") as Broadcast["audience_type"],
+      status: "draft",
+      total_recipients: 0,
+      sent_count: 0,
+      delivered_count: 0,
+      failed_count: 0,
+      created_at: new Date().toISOString().slice(0, 10),
+    };
+    setBroadcasts(prev => [draft, ...prev]);
     setSavingDraft(false);
     showToast(`Draft "${name}" saved.`);
   };

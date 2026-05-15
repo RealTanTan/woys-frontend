@@ -18,12 +18,13 @@ import { Textarea } from "@/components/ui/Input";
 import { useToast } from "@/components/ui/Toast";
 import { useDemoStore } from "@/lib/demo-store";
 import { formatRelative } from "@/lib/utils";
+import type { Conversation } from "@/types";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 export default function MessagesPage() {
   const [showToast, toastNode] = useToast();
-  const { conversations: convList } = useDemoStore();
+  const { conversations: convList, setConversations } = useDemoStore();
   const [search, setSearch] = useState("");
   const [newMsgOpen, setNewMsgOpen] = useState(false);
   const [newMsg, setNewMsg] = useState({ phone: "", body: "" });
@@ -47,8 +48,27 @@ export default function MessagesPage() {
   const handleSend = async () => {
     if (!newMsg.phone.trim() || !newMsg.body.trim()) return;
     setSending(true);
-    // TODO: await sendMessage({ phone: newMsg.phone, body: newMsg.body }) from api.ts
     await new Promise(r => setTimeout(r, 1000));
+    // Add to conversation store so it appears in the inbox
+    const newConv: Conversation = {
+      id: `conv-${Date.now()}`,
+      contact: {
+        id: `c-${Date.now()}`,
+        name: newMsg.phone, // use phone as name until they reply
+        phone: newMsg.phone,
+        tags: [],
+        consent_status: "given",
+        created_at: new Date().toISOString().slice(0, 10),
+      },
+      last_message: newMsg.body,
+      last_message_at: new Date().toISOString(),
+      unread_count: 0,
+      status: "open",
+      messages: [
+        { id: `m-${Date.now()}`, contact_id: `c-${Date.now()}`, contact_name: newMsg.phone, contact_phone: newMsg.phone, body: newMsg.body, direction: "outbound" as const, status: "delivered" as const, sent_at: new Date().toISOString() },
+      ],
+    };
+    setConversations(prev => [newConv, ...prev]);
     setSending(false);
     setSent(true);
     setTimeout(() => {
