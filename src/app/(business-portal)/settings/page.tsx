@@ -41,7 +41,8 @@ const roleColors: Record<string, "purple" | "blue" | "gray"> = {
 export default function SettingsPage() {
   const [showToast, toastNode] = useToast();
   const [tab, setTab] = useState("general");
-  const { team, setTeam, orgName, orgEmail, orgSlug, smsNumber, isDemo, messagesUsed, messagesLimit } = useDemoStore();
+  const { team, setTeam, orgName, orgEmail, orgSlug, smsNumber, isDemo, messagesUsed, messagesLimit,
+    currentPlan, setCurrentPlan, setMessagesLimit, cancelDate, setCancelDate } = useDemoStore();
 
   // SMS & CASL
   const [stopMessage, setStopMessage] = useState("You have been unsubscribed from Billiard Bar & Club messages. Reply START to re-subscribe.");
@@ -103,21 +104,34 @@ export default function SettingsPage() {
     setDeleteTarget(null);
   };
 
+  const PLAN_SMS: Record<string, number> = {
+    Starter: 1000, Growth: 5000, Pro: 15000, Enterprise: 50000,
+  };
+  const PLAN_ORDER = ["Starter", "Growth", "Pro", "Enterprise"];
+  const currentPlanIdx = PLAN_ORDER.findIndex(p => p.toLowerCase() === currentPlan.toLowerCase());
+
   const handleUpgrade = async (planName: string) => {
     setUpgradeLoading(planName);
-    // TODO: POST /api/billing/checkout → redirect to Stripe checkout URL
     await new Promise(r => setTimeout(r, 800));
+    setCurrentPlan(planName.toLowerCase());
+    setMessagesLimit(PLAN_SMS[planName] ?? 5000);
     setUpgradeLoading(null);
-    showToast(`Redirecting to billing for ${planName} plan…`);
+    const targetIdx = PLAN_ORDER.indexOf(planName);
+    const direction = targetIdx > currentPlanIdx ? "upgraded" : "downgraded";
+    showToast(`Plan ${direction} to ${planName}.`);
   };
 
   const handleCancelSubscription = async () => {
     setCancelLoading(true);
-    // TODO: POST /api/billing/cancel
     await new Promise(r => setTimeout(r, 1000));
+    // End of next month
+    const now = new Date();
+    const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    const formatted = endDate.toLocaleDateString("en-CA", { year: "numeric", month: "long", day: "numeric" });
+    setCancelDate(formatted);
     setCancelLoading(false);
     setShowCancelConfirm(false);
-    showToast("Cancellation submitted. Confirmation email sent.");
+    showToast(`Subscription cancelled. Active until ${formatted}.`);
   };
 
   return (
@@ -249,7 +263,8 @@ export default function SettingsPage() {
               <div className="flex items-center justify-between mb-3">
                 <div>
                   <p className="text-brand-100 text-sm">Current Plan</p>
-                  <p className="text-2xl font-bold mt-0.5">{planLabel(currentOrg.plan)}</p>
+                  <p className="text-2xl font-bold mt-0.5">{planLabel(currentPlan)}</p>
+                  {cancelDate && <p className="text-xs text-red-200 mt-1">Cancels {cancelDate}</p>}
                 </div>
                 <div className="text-right">
                   <p className="text-3xl font-bold">{usagePct}%</p>
@@ -266,36 +281,40 @@ export default function SettingsPage() {
 
             <div className="grid grid-cols-1 gap-3">
               {[
-                { name: "Starter",    price: "$29",    sms: "1,000",     contacts: "500",       current: false },
-                { name: "Growth",     price: "$79",    sms: "5,000",     contacts: "2,000",     current: true  },
-                { name: "Pro",        price: "$199",   sms: "15,000",    contacts: "10,000",    current: false },
-                { name: "Enterprise", price: "Custom", sms: "Unlimited", contacts: "Unlimited", current: false },
-              ].map(plan => (
-                <div key={plan.name} className={`p-4 rounded-2xl border-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between ${plan.current ? "border-brand-400 dark:border-brand-600 bg-brand-50 dark:bg-brand-950/30" : "border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900"}`}>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <p className="font-semibold text-slate-900 dark:text-slate-100">{plan.name}</p>
-                      {plan.current && <Badge color="blue">Current</Badge>}
+                { name: "Starter",    price: "$29",    sms: "1,000",     contacts: "500" },
+                { name: "Growth",     price: "$79",    sms: "5,000",     contacts: "2,000" },
+                { name: "Pro",        price: "$199",   sms: "15,000",    contacts: "10,000" },
+                { name: "Enterprise", price: "Custom", sms: "Unlimited", contacts: "Unlimited" },
+              ].map((plan, idx) => {
+                const isCurrent = plan.name.toLowerCase() === currentPlan.toLowerCase();
+                const isUpgrade = idx > currentPlanIdx;
+                return (
+                  <div key={plan.name} className={`p-4 rounded-2xl border-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between ${isCurrent ? "border-brand-400 dark:border-brand-600 bg-brand-50 dark:bg-brand-950/30" : "border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900"}`}>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <p className="font-semibold text-slate-900 dark:text-slate-100">{plan.name}</p>
+                        {isCurrent && <Badge color="blue">Current</Badge>}
+                      </div>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{plan.sms} SMS · {plan.contacts} contacts</p>
                     </div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{plan.sms} SMS · {plan.contacts} contacts</p>
+                    <div className="flex items-center justify-between gap-3 sm:justify-end">
+                      <p className="font-bold text-slate-900 dark:text-slate-100">
+                        {plan.price}<span className="text-xs font-normal text-slate-400">{plan.price !== "Custom" ? "/mo" : ""}</span>
+                      </p>
+                      {!isCurrent && (
+                        <Button
+                          size="sm"
+                          variant={isUpgrade ? "primary" : "outline"}
+                          loading={upgradeLoading === plan.name}
+                          onClick={() => handleUpgrade(plan.name)}
+                        >
+                          {isUpgrade ? "Upgrade" : "Downgrade"}
+                        </Button>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex items-center justify-between gap-3 sm:justify-end">
-                    <p className="font-bold text-slate-900 dark:text-slate-100">
-                      {plan.price}<span className="text-xs font-normal text-slate-400">{plan.price !== "Custom" ? "/mo" : ""}</span>
-                    </p>
-                    {!plan.current && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        loading={upgradeLoading === plan.name}
-                        onClick={() => handleUpgrade(plan.name)}
-                      >
-                        Upgrade
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             <p className="text-xs text-slate-400 flex items-center gap-1">
@@ -308,14 +327,24 @@ export default function SettingsPage() {
               <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">
                 Your account stays active until the end of the current billing period. No refunds on partial months.
               </p>
-              {!showCancelConfirm ? (
+              {cancelDate ? (
+                <div className="p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/40 rounded-xl">
+                  <p className="text-sm font-semibold text-amber-700 dark:text-amber-400">Cancellation scheduled</p>
+                  <p className="text-xs text-amber-600 dark:text-amber-500 mt-0.5">
+                    Your plan stays active until <strong>{cancelDate}</strong>. After that date, your account will be deactivated.
+                  </p>
+                  <button className="mt-2 text-xs text-brand-600 dark:text-brand-400 hover:underline" onClick={() => setCancelDate(null)}>
+                    Undo cancellation
+                  </button>
+                </div>
+              ) : !showCancelConfirm ? (
                 <Button variant="danger" size="sm" onClick={() => setShowCancelConfirm(true)}>Cancel Subscription</Button>
               ) : (
                 <div className="space-y-3">
                   <div className="p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/40 rounded-xl">
                     <p className="text-sm font-semibold text-red-700 dark:text-red-400">Are you sure?</p>
                     <p className="text-xs text-red-600 dark:text-red-500 mt-0.5">
-                      This will cancel your subscription. You'll lose access at end of billing cycle.
+                      You'll keep access until the end of the current billing period.
                     </p>
                   </div>
                   <div className="flex flex-col gap-2 sm:flex-row">

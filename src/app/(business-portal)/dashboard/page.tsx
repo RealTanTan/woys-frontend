@@ -78,6 +78,11 @@ export default function DashboardPage() {
   const recentBroadcasts = broadcasts.filter(b => b.status === "sent").slice(0, 3);
   const recentConvs = conversations.filter(c => c.unread_count > 0).slice(0, 4);
 
+  // Delivery rate — derived from actual sent broadcasts
+  const totalSent      = broadcasts.reduce((s, b) => s + (b.sent_count ?? 0), 0);
+  const totalDelivered = broadcasts.reduce((s, b) => s + (b.delivered_count ?? 0), 0);
+  const deliveryRate   = totalSent > 0 ? `${Math.round((totalDelivered / totalSent) * 100)}%` : "—";
+
   const [suggestions, setSuggestions] = useState<AiPromoSuggestion[]>(() => isDemo ? [] : getAiSuggestions());
   const [approvedIdx, setApprovedIdx] = useState<number | null>(null);
 
@@ -152,7 +157,7 @@ export default function DashboardPage() {
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <StatCard label="Customers" value={contacts.length} sub={contacts.length > 0 ? `+${Math.min(contacts.length, 27)} this week` : "Add your first contact"} icon={<Users className="w-5 h-5" />} color="brand" />
-          <StatCard label="Delivery Rate" value="97.2%" sub="healthy" icon={<TrendingUp className="w-5 h-5" />} color="green" />
+          <StatCard label="Delivery Rate" value={deliveryRate} sub={totalSent > 0 ? "healthy" : "no campaigns yet"} icon={<TrendingUp className="w-5 h-5" />} color="green" />
           <StatCard label="Unread Replies" value={recentConvs.reduce((sum, c) => sum + c.unread_count, 0)} sub="needs attention" icon={<MessageSquare className="w-5 h-5" />} color="orange" />
         </div>
 

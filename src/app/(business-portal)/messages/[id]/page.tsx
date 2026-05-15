@@ -14,10 +14,10 @@ import { ArrowLeft, Send, CheckCheck, Check, Clock, AlertCircle } from "lucide-r
 import { Topbar } from "@/components/layout/Topbar";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
-import { conversations as initialConversations } from "@/lib/mock-data";
 import { formatTime } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
+import { useDemoStore } from "@/lib/demo-store";
 import type { MessageStatus, Conversation } from "@/types";
 
 function StatusIcon({ status }: { status: MessageStatus }) {
@@ -29,7 +29,8 @@ function StatusIcon({ status }: { status: MessageStatus }) {
 
 export default function ConversationPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const initial = initialConversations.find(c => c.id === id) ?? null;
+  const { conversations } = useDemoStore();
+  const initial = conversations.find(c => c.id === id) ?? null;
   const [conv, setConv] = useState<Conversation | null>(initial);
   const [reply, setReply] = useState("");
   const [sending, setSending] = useState(false);

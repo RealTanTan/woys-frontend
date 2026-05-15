@@ -1,17 +1,4 @@
 "use client";
-/**
- * DEMO STORE — Global React Context for the business portal.
- *
- * WHY: Next.js page components unmount on navigation, resetting local state.
- * This context lives in the layout, so state (contacts, broadcasts, etc.)
- * survives page-to-page navigation for the entire tab session.
- *
- * For demo sessions (isDemoSession() === true): starts completely empty.
- * For real logins: initialises from mock-data as before.
- *
- * SWAP FOR REAL BACKEND: replace mock initialisers with SWR/React Query fetches.
- * The setter signatures stay identical — pages don't need to change.
- */
 import { createContext, useContext, useState, ReactNode } from "react";
 import {
   contacts as mockContacts,
@@ -30,55 +17,51 @@ import type {
 // ─── Store shape ─────────────────────────────────────────────────────────────
 
 export type DemoStore = {
-  // Auth / org
   isDemo: boolean;
   orgName: string;
   orgEmail: string;
   orgSlug: string;
   smsNumber: string;
+  currentPlan: string;
+  setCurrentPlan: (plan: string) => void;
   messagesUsed: number;
+  setMessagesUsed: React.Dispatch<React.SetStateAction<number>>;
   messagesLimit: number;
+  setMessagesLimit: React.Dispatch<React.SetStateAction<number>>;
+  cancelDate: string | null;           // ISO date string when set
+  setCancelDate: React.Dispatch<React.SetStateAction<string | null>>;
 
-  // Data collections
   contacts: Contact[];
   setContacts: React.Dispatch<React.SetStateAction<Contact[]>>;
-
   broadcasts: Broadcast[];
   setBroadcasts: React.Dispatch<React.SetStateAction<Broadcast[]>>;
-
   templates: Template[];
   setTemplates: React.Dispatch<React.SetStateAction<Template[]>>;
-
   flows: Flow[];
   setFlows: React.Dispatch<React.SetStateAction<Flow[]>>;
-
   conversations: Conversation[];
   setConversations: React.Dispatch<React.SetStateAction<Conversation[]>>;
-
   team: TeamMember[];
   setTeam: React.Dispatch<React.SetStateAction<TeamMember[]>>;
 };
 
-// ─── Context ─────────────────────────────────────────────────────────────────
-
 const StoreCtx = createContext<DemoStore | null>(null);
 
-// ─── Provider ────────────────────────────────────────────────────────────────
-
 export function DemoStoreProvider({ children }: { children: ReactNode }) {
-  // Read flags once at mount — runs only on client (layout is client-wrapped)
-  const isDemo  = typeof window !== "undefined" && isDemoSession();
-  const user    = typeof window !== "undefined" ? getUser() : null;
+  const isDemo = typeof window !== "undefined" && isDemoSession();
+  const user   = typeof window !== "undefined" ? getUser() : null;
 
-  // Org metadata
-  const orgName     = isDemo ? (user?.org    ?? "My Business")           : currentOrg.name;
-  const orgEmail    = isDemo ? (user?.email  ?? "")                      : "hello@billiardbar.ca";
-  const orgSlug     = isDemo ? (orgName.toLowerCase().replace(/\s+/g, "-")) : "billiard-bar";
-  const smsNumber   = isDemo ? "+1 (XXX) XXX-XXXX"                       : currentOrg.sms_number;
-  const messagesUsed  = isDemo ? 0                                        : currentOrg.messages_used;
-  const messagesLimit = isDemo ? 5000                                     : currentOrg.messages_limit;
+  const orgName  = isDemo ? (user?.org   ?? "My Business")                         : currentOrg.name;
+  const orgEmail = isDemo ? (user?.email ?? "")                                    : "hello@billiardbar.ca";
+  const orgSlug  = isDemo ? orgName.toLowerCase().replace(/\s+/g, "-")             : "billiard-bar";
+  const smsNumber = isDemo ? "+1 (XXX) XXX-XXXX"                                   : currentOrg.sms_number;
 
-  // Data — empty for demo, mock for real login
+  const [currentPlan,   setCurrentPlanRaw] = useState<string>(isDemo ? "growth" : currentOrg.plan);
+  const setCurrentPlan = (plan: string) => setCurrentPlanRaw(plan);
+  const [messagesUsed,  setMessagesUsed]  = useState(isDemo ? 0                         : currentOrg.messages_used);
+  const [messagesLimit, setMessagesLimit] = useState(isDemo ? 5000                      : currentOrg.messages_limit);
+  const [cancelDate,    setCancelDate]    = useState<string | null>(null);
+
   const [contacts,      setContacts]      = useState<Contact[]>     (isDemo ? [] : mockContacts);
   const [broadcasts,    setBroadcasts]    = useState<Broadcast[]>   (isDemo ? [] : mockBroadcasts);
   const [templates,     setTemplates]     = useState<Template[]>    (isDemo ? [] : mockTemplates);
@@ -88,7 +71,11 @@ export function DemoStoreProvider({ children }: { children: ReactNode }) {
 
   return (
     <StoreCtx.Provider value={{
-      isDemo, orgName, orgEmail, orgSlug, smsNumber, messagesUsed, messagesLimit,
+      isDemo, orgName, orgEmail, orgSlug, smsNumber,
+      currentPlan, setCurrentPlan,
+      messagesUsed, setMessagesUsed,
+      messagesLimit, setMessagesLimit,
+      cancelDate, setCancelDate,
       contacts,      setContacts,
       broadcasts,    setBroadcasts,
       templates,     setTemplates,
@@ -100,8 +87,6 @@ export function DemoStoreProvider({ children }: { children: ReactNode }) {
     </StoreCtx.Provider>
   );
 }
-
-// ─── Hook ────────────────────────────────────────────────────────────────────
 
 export function useDemoStore(): DemoStore {
   const ctx = useContext(StoreCtx);

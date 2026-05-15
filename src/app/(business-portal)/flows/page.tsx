@@ -41,43 +41,44 @@ function formatDelay(hours: number): string {
   return `${Math.round(hours / 24)} day${Math.round(hours / 24) > 1 ? "s" : ""} later`;
 }
 
-const TEMPLATES = [
-  {
-    name: "Welcome Series",
-    desc: "3-step welcome for new contacts",
-    trigger: "contact_joins" as const,
-    icon: <Users className="w-4 h-4" />,
-    steps: [
-      { id: "s1", step_order: 0, delay_hours: 0,   message_body: "Welcome to Billiard Bar & Club! 🎱 Show this message for 10% off your first visit. Reply STOP to unsubscribe." },
-      { id: "s2", step_order: 1, delay_hours: 72,  message_body: "Hey {{first_name}}! Hope you enjoyed your visit. Don't forget — Friday nights are our best. See you soon! Reply STOP to opt out." },
-      { id: "s3", step_order: 2, delay_hours: 168, message_body: "{{first_name}}, we miss you! Come back this weekend and get a free game on us. Reply STOP to unsubscribe." },
-    ],
-  },
-  {
-    name: "Abandoned Booking Reminder",
-    desc: "2-step recovery for incomplete bookings",
-    trigger: "custom_event" as const,
-    icon: <Zap className="w-4 h-4" />,
-    steps: [
-      { id: "s1", step_order: 0, delay_hours: 1,  message_body: "Hi {{first_name}}! You started a booking at Billiard Bar & Club but didn't finish. Complete it here: [link]. Reply STOP to opt out." },
-      { id: "s2", step_order: 1, delay_hours: 24, message_body: "Last chance! Your reserved table at Billiard Bar & Club is still waiting. Book now before it's gone. Reply STOP to unsubscribe." },
-    ],
-  },
-  {
-    name: "Re-engagement",
-    desc: "Win back contacts inactive for 60+ days",
-    trigger: "date" as const,
-    icon: <Calendar className="w-4 h-4" />,
-    steps: [
-      { id: "s1", step_order: 0, delay_hours: 0,   message_body: "We miss you at Billiard Bar & Club, {{first_name}}! It's been a while. Here's 15% off your next visit: COMEBACK15. Reply STOP to opt out." },
-      { id: "s2", step_order: 1, delay_hours: 120, message_body: "{{first_name}}, your exclusive offer expires soon! Use COMEBACK15 for 15% off — valid this weekend only. Reply STOP to unsubscribe." },
-    ],
-  },
-];
-
 export default function FlowsPage() {
   const [showToast, toastNode] = useToast();
-  const { flows: flowList, setFlows: setFlowList } = useDemoStore();
+  const { flows: flowList, setFlows: setFlowList, orgName } = useDemoStore();
+
+  // Templates use live orgName so they're never hardcoded to Billiard Bar
+  const TEMPLATES = [
+    {
+      name: "Welcome Series",
+      desc: "3-step welcome for new contacts",
+      trigger: "contact_joins" as const,
+      icon: <Users className="w-4 h-4" />,
+      steps: [
+        { id: "s1", step_order: 0, delay_hours: 0,   message_body: `Welcome to ${orgName}! Show this message for 10% off your first visit. Reply STOP to unsubscribe.` },
+        { id: "s2", step_order: 1, delay_hours: 72,  message_body: `Hey {{first_name}}! Hope you enjoyed your visit to ${orgName}. Don't forget — Friday nights are our best. Reply STOP to opt out.` },
+        { id: "s3", step_order: 2, delay_hours: 168, message_body: `{{first_name}}, we miss you at ${orgName}! Come back this weekend and get a free item on us. Reply STOP to unsubscribe.` },
+      ],
+    },
+    {
+      name: "Abandoned Booking Reminder",
+      desc: "2-step recovery for incomplete bookings",
+      trigger: "custom_event" as const,
+      icon: <Zap className="w-4 h-4" />,
+      steps: [
+        { id: "s1", step_order: 0, delay_hours: 1,  message_body: `Hi {{first_name}}! You started a booking at ${orgName} but didn't finish. Complete it here: [link]. Reply STOP to opt out.` },
+        { id: "s2", step_order: 1, delay_hours: 24, message_body: `Last chance! Your reservation at ${orgName} is still waiting. Book now before it's gone. Reply STOP to unsubscribe.` },
+      ],
+    },
+    {
+      name: "Re-engagement",
+      desc: "Win back contacts inactive for 60+ days",
+      trigger: "date" as const,
+      icon: <Calendar className="w-4 h-4" />,
+      steps: [
+        { id: "s1", step_order: 0, delay_hours: 0,   message_body: `We miss you at ${orgName}, {{first_name}}! It's been a while. Here's 15% off your next visit: COMEBACK15. Reply STOP to opt out.` },
+        { id: "s2", step_order: 1, delay_hours: 120, message_body: `{{first_name}}, your exclusive ${orgName} offer expires soon! Use COMEBACK15 for 15% off — valid this weekend only. Reply STOP to unsubscribe.` },
+      ],
+    },
+  ];
   const [expanded, setExpanded] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Flow | null>(null);
   const [editTarget, setEditTarget] = useState<Flow | null>(null);

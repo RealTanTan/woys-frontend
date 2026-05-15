@@ -34,7 +34,7 @@ const audienceColors: Record<string, string> = {
 export default function NewBroadcastPage() {
   const router = useRouter();
   const [showToast, toastNode] = useToast();
-  const { contacts, broadcasts, setBroadcasts } = useDemoStore();
+  const { contacts, broadcasts, setBroadcasts, setMessagesUsed } = useDemoStore();
 
   // Derive audience counts from live store
   const audiences = [
@@ -119,6 +119,7 @@ export default function NewBroadcastPage() {
       created_at: new Date().toISOString().slice(0, 10),
     };
     setBroadcasts(prev => [newB, ...prev]);
+    if (scheduleType === "now") setMessagesUsed(prev => prev + newB.sent_count);
     setSending(false);
     showToast(scheduleType === "now" ? `"${name}" sent to ${selectedAudience?.count} contacts!` : `"${name}" scheduled!`);
     setTimeout(() => router.push("/broadcasts"), 1500);
