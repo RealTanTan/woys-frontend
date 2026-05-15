@@ -1,11 +1,16 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import { Headphones, X, Send, Paperclip, Image as ImageIcon, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { OverlayPortal } from "@/components/ui/OverlayPortal";
 import { layers } from "@/lib/layers";
 
 export function TicketButton() {
+  const pathname = usePathname();
+  // Hide on conversation pages — the reply box occupies the same corner
+  if (pathname.startsWith("/messages/")) return null;
+
   const [open, setOpen] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [form, setForm] = useState({ subject: "", body: "", priority: "medium" });
