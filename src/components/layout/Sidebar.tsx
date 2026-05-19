@@ -3,7 +3,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Users, MessageSquare, Radio,
-  Settings, LogOut, Zap, GitBranch,
+  Settings, LogOut, Zap, GitBranch, BarChart3, CreditCard,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { mockLogout, getUser, isDemoSession } from "@/lib/auth";
@@ -11,12 +11,14 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 const nav = [
-  { href: "/dashboard",  label: "Dashboard",  icon: LayoutDashboard },
-  { href: "/contacts",   label: "Contacts",   icon: Users },
-  { href: "/messages",   label: "Messages",   icon: MessageSquare },
-  { href: "/broadcasts", label: "Campaigns",  icon: Radio },
-  { href: "/flows",      label: "Flows",      icon: GitBranch },
-  { href: "/settings",   label: "Settings",   icon: Settings },
+  { href: "/dashboard",    label: "Dashboard",    icon: LayoutDashboard },
+  { href: "/contacts",     label: "Contacts",     icon: Users },
+  { href: "/messages",     label: "Messages",     icon: MessageSquare },
+  { href: "/broadcasts",   label: "Campaigns",    icon: Radio },
+  { href: "/flows",        label: "Automations",  icon: GitBranch },
+  { href: "/analytics",    label: "Analytics",    icon: BarChart3 },
+  { href: "/subscription", label: "Subscription", icon: CreditCard },
+  { href: "/settings",     label: "Settings",     icon: Settings },
 ];
 
 export function Sidebar() {

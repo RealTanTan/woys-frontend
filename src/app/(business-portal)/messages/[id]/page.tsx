@@ -32,6 +32,49 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
   const { conversations } = useDemoStore();
   const initial = conversations.find(c => c.id === id) ?? null;
   const [conv, setConv] = useState<Conversation | null>(initial);
+
+  // Inject mock campaign messages for demo richness
+  const campaignMsgs = [
+    {
+      id: "camp-1",
+      contact_id: conv?.contact.id ?? "",
+      contact_name: conv?.contact.name ?? "",
+      contact_phone: conv?.contact.phone ?? "",
+      direction: "outbound" as const,
+      body: `Hi ${conv?.contact.name?.split(" ")[0] ?? "there"}! Don't miss our exclusive member deal this weekend. Show this text for 20% off. Reply STOP to unsubscribe.`,
+      status: "delivered" as const,
+      sent_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+      campaign: { title: "Weekend Member Deal", type: "sms" as const },
+    },
+    {
+      id: "camp-2",
+      contact_id: conv?.contact.id ?? "",
+      contact_name: conv?.contact.name ?? "",
+      contact_phone: conv?.contact.phone ?? "",
+      direction: "outbound" as const,
+      body: "Your loyalty points expire soon! Visit us this week to redeem. Use code LOYAL10 for 10% off.",
+      status: "delivered" as const,
+      sent_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+      campaign: { title: "Loyalty Reminder", type: "sms" as const },
+    },
+  ];
+
+  type MsgType = typeof campaignMsgs[0] | (NonNullable<typeof conv>["messages"][0] & { campaign?: never });
+
+  const [msgFilter, setMsgFilter] = useState<"all" | "sms" | "campaigns" | "manual">("all");
+
+  const allMessages: MsgType[] = [
+    ...(conv?.messages ?? []).map(m => ({ ...m, campaign: undefined })),
+    ...campaignMsgs,
+  ].sort((a, b) => new Date(a.sent_at).getTime() - new Date(b.sent_at).getTime());
+
+  const filteredMessages = allMessages.filter(m => {
+    if (msgFilter === "campaigns") return !!m.campaign;
+    if (msgFilter === "manual")    return !m.campaign && m.direction === "outbound";
+    if (msgFilter === "sms")       return m.direction === "outbound";
+    return true;
+  });
+
   const [reply, setReply] = useState("");
   const [sending, setSending] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -114,29 +157,56 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
         </div>
       </div>
 
+      {/* Filter tabs */}
+      <div className="flex items-center gap-1 px-4 py-2 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900">
+        {(["all", "sms", "campaigns", "manual"] as const).map(f => (
+          <button
+            key={f}
+            onClick={() => setMsgFilter(f)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              msgFilter === f
+                ? "bg-brand-600 text-white"
+                : "text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+            }`}
+          >
+            {f === "all" ? "All" : f === "sms" ? "SMS" : f === "campaigns" ? "📢 Campaigns" : "Manual"}
+          </button>
+        ))}
+      </div>
+
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4 sm:p-6">
-        {conv.messages.map((msg) => {
+        {filteredMessages.map((msg) => {
           const isOut = msg.direction === "outbound";
+          const isCampaign = !!msg.campaign;
           return (
-            <div key={msg.id} className={cn("flex", isOut ? "justify-end" : "justify-start")}>
-              {!isOut && (
-                <div className="w-7 h-7 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300 text-xs font-semibold mr-2 mt-1 shrink-0">
-                  {conv.contact.name.charAt(0)}
+            <div key={msg.id} className={cn("flex flex-col", isOut ? "items-end" : "items-start")}>
+              {isCampaign && (
+                <div className="flex items-center gap-1.5 mb-1 px-1">
+                  <span className="text-[10px] font-bold text-violet-600 dark:text-violet-400 uppercase tracking-wide">📢 Campaign · {msg.campaign!.title}</span>
                 </div>
               )}
-              <div className={cn("max-w-[78vw] sm:max-w-xs lg:max-w-md", isOut ? "items-end" : "items-start", "flex flex-col gap-1")}>
-                <div className={cn(
-                  "px-4 py-2.5 rounded-2xl text-sm",
-                  isOut
-                    ? "bg-brand-600 text-white rounded-br-sm"
-                    : "bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-bl-sm"
-                )}>
-                  {msg.body}
-                </div>
-                <div className={cn("flex items-center gap-1 text-xs text-slate-400", isOut && "flex-row-reverse")}>
-                  <span>{formatTime(msg.sent_at)}</span>
-                  {isOut && <StatusIcon status={msg.status} />}
+              <div className={cn("flex", isOut ? "justify-end" : "justify-start") + " w-full"}>
+                {!isOut && (
+                  <div className="w-7 h-7 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300 text-xs font-semibold mr-2 mt-1 shrink-0">
+                    {conv!.contact.name.charAt(0)}
+                  </div>
+                )}
+                <div className={cn("max-w-[78vw] sm:max-w-xs lg:max-w-md", "flex flex-col gap-1", isOut ? "items-end" : "items-start")}>
+                  <div className={cn(
+                    "px-4 py-2.5 rounded-2xl text-sm",
+                    isCampaign
+                      ? "bg-violet-600 text-white rounded-br-sm ring-2 ring-violet-400/30"
+                      : isOut
+                      ? "bg-brand-600 text-white rounded-br-sm"
+                      : "bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-bl-sm"
+                  )}>
+                    {msg.body}
+                  </div>
+                  <div className={cn("flex items-center gap-1 text-xs text-slate-400", isOut && "flex-row-reverse")}>
+                    <span>{formatTime(msg.sent_at)}</span>
+                    {isOut && <StatusIcon status={msg.status} />}
+                  </div>
                 </div>
               </div>
             </div>

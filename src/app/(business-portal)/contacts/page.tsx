@@ -104,9 +104,11 @@ export default function ContactsPage() {
   const { contacts, setContacts } = useDemoStore();
   const [tab, setTab] = useState("all");
   const [search, setSearch] = useState("");
+  const [activeSegment, setActiveSegment] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<"name" | "recent" | "tag">("name");
   const [addOpen, setAddOpen] = useState(false);
   const [consentContact, setConsentContact] = useState<Contact | null>(null);
-  const [addForm, setAddForm] = useState({ name: "", phone: "", email: "", tag: "regular" });
+  const [addForm, setAddForm] = useState({ name: "", phone: "", email: "", tag: "regular", consent: true });
   const [addLoading, setAddLoading] = useState(false);
   const [consentLoading, setConsentLoading] = useState(false);
   const [editContact, setEditContact] = useState<Contact | null>(null);
@@ -124,10 +126,24 @@ export default function ContactsPage() {
   const pending  = contacts.filter(c => c.consent_status === "pending");
   const optedOut = contacts.filter(c => c.consent_status === "opted_out");
 
+  const SEGMENTS = [
+    { id: "vip",       label: "VIP Customers",  icon: "⭐", filter: (c: Contact) => c.tags.includes("vip") },
+    { id: "new",       label: "New Contacts",   icon: "🆕", filter: (c: Contact) => c.tags.includes("new") },
+    { id: "winback",   label: "Cold Leads",     icon: "❄️", filter: (c: Contact) => c.tags.includes("winback") },
+    { id: "consented", label: "Active",         icon: "✅", filter: (c: Contact) => c.consent_status === "given" },
+    { id: "pending",   label: "Needs Follow-Up",icon: "⏳", filter: (c: Contact) => c.consent_status === "pending" },
+  ];
+
   const sourceList = tab === "all" ? contacts : tab === "pending" ? pending : tab === "optedout" ? optedOut : given;
-  const filtered = sourceList.filter(c =>
+  let filtered = sourceList.filter(c =>
     c.name.toLowerCase().includes(search.toLowerCase()) || c.phone.includes(search)
   );
+  if (activeSegment) {
+    const seg = SEGMENTS.find(s => s.id === activeSegment);
+    if (seg) filtered = filtered.filter(seg.filter);
+  }
+  if (sortBy === "name") filtered = [...filtered].sort((a, b) => a.name.localeCompare(b.name));
+  if (sortBy === "tag")  filtered = [...filtered].sort((a, b) => (a.tags[0] ?? "").localeCompare(b.tags[0] ?? ""));
 
   const tabs = [
     { id: "all",      label: "All Contacts",   count: contacts.length },
@@ -140,20 +156,22 @@ export default function ContactsPage() {
     if (!addForm.name.trim() || !addForm.phone.trim()) return;
     setAddLoading(true);
     await new Promise(r => setTimeout(r, 700));
+    const today = new Date().toISOString().slice(0, 10);
     const newContact: Contact = {
       id: `c${Date.now()}`,
       name: addForm.name.trim(),
       phone: addForm.phone.trim(),
       email: addForm.email.trim() || undefined,
       tags: [addForm.tag as ContactTag],
-      consent_status: "pending",
-      created_at: new Date().toISOString().slice(0, 10),
+      consent_status: addForm.consent ? "given" : "pending",
+      ...(addForm.consent ? { consent_given_at: today } : {}),
+      created_at: today,
     };
     setContacts(cs => [...cs, newContact]);
     setAddLoading(false);
     setAddOpen(false);
-    setAddForm({ name: "", phone: "", email: "", tag: "regular" });
-    showToast(`${addForm.name} added — consent request pending.`);
+    setAddForm({ name: "", phone: "", email: "", tag: "regular", consent: true });
+    showToast(addForm.consent ? `${addForm.name} added with consent granted.` : `${addForm.name} added — consent request pending.`);
   };
 
   const handleSendConsent = async () => {
@@ -230,7 +248,9 @@ export default function ContactsPage() {
       <input ref={csvRef} type="file" accept=".csv" className="hidden" onChange={handleCsvImport} />
       <Topbar
         title="Contacts"
-        subtitle={`${contacts.length} customers saved. Only consented customers receive campaigns.`}
+        subtitle={activeSegment || search
+          ? `${filtered.length} of ${contacts.length} contacts`
+          : `${contacts.length} total contacts`}
         actions={
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={() => csvRef.current?.click()}>
@@ -243,6 +263,31 @@ export default function ContactsPage() {
         }
       />
       <main className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
+        {/* Smart segments */}
+        <div className="flex items-center gap-2 flex-wrap">
+          {SEGMENTS.map(seg => {
+            const count = contacts.filter(seg.filter).length;
+            return (
+              <button
+                key={seg.id}
+                onClick={() => setActiveSegment(activeSegment === seg.id ? null : seg.id)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
+                  activeSegment === seg.id
+                    ? "bg-brand-600 text-white border-brand-600"
+                    : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-brand-400"
+                }`}
+              >
+                <span>{seg.icon}</span>
+                {seg.label}
+                <span className={`ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold ${activeSegment === seg.id ? "bg-white/20 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-500"}`}>{count}</span>
+              </button>
+            );
+          })}
+          {activeSegment && (
+            <button onClick={() => setActiveSegment(null)} className="text-xs text-slate-400 hover:text-slate-600 ml-1">✕ Clear</button>
+          )}
+        </div>
+
         <div className="flex items-center gap-4 flex-wrap">
           <Tabs tabs={tabs} active={tab} onChange={setTab} />
           <div className="flex-1 min-w-48 max-w-sm">
@@ -253,6 +298,15 @@ export default function ContactsPage() {
               leftIcon={<Search className="w-4 h-4" />}
             />
           </div>
+          <select
+            value={sortBy}
+            onChange={e => setSortBy(e.target.value as "name" | "recent" | "tag")}
+            className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500"
+          >
+            <option value="name">Sort: A–Z</option>
+            <option value="tag">Sort: Tag</option>
+            <option value="recent">Sort: Recent</option>
+          </select>
         </div>
 
         {tab === "pending" && (
@@ -310,9 +364,26 @@ export default function ContactsPage() {
               <option value="winback">Win-back</option>
             </select>
           </div>
-          <div className="p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-100 dark:border-amber-900/50 rounded-xl">
-            <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 mb-1">CASL Consent Required</p>
-            <p className="text-xs text-amber-600 dark:text-amber-500">Contact will be added with pending consent status. A consent request will be queued automatically.</p>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between p-4 rounded-2xl border-2 border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/30">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Communication Consent</p>
+                  <span className="px-1.5 py-0.5 text-[10px] font-bold rounded-md bg-emerald-600 text-white tracking-wide">CASL READY</span>
+                </div>
+                <p className="text-xs text-slate-500 dark:text-slate-400">This customer has agreed to receive SMS communications from your business.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAddForm(f => ({ ...f, consent: !f.consent }))}
+                className={`relative w-12 h-6 rounded-full transition-all duration-300 shrink-0 ml-4 ${addForm.consent ? "bg-emerald-500" : "bg-slate-200 dark:bg-slate-700"}`}
+              >
+                <span className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm transition-all duration-300 ${addForm.consent ? "translate-x-7" : "translate-x-1"}`} />
+              </button>
+            </div>
+            {!addForm.consent && (
+              <p className="text-xs text-amber-600 dark:text-amber-400 px-1">⚠ Contact will be added as pending — you cannot send them campaigns until consent is granted.</p>
+            )}
           </div>
           <div className="flex flex-col gap-3 pt-2 sm:flex-row">
             <Button variant="outline" className="flex-1" onClick={() => setAddOpen(false)}>Cancel</Button>
